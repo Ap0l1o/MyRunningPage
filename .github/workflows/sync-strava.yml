@@ -42,3 +42,10 @@ jobs:
           git add content/runs/
           git commit -m "Update running data" || exit 0
           git push
+      
+      - name: Trigger Deploy Workflow
+        if: success()
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          event-type: deploy-site
+          token: ${{ secrets.GITHUB_TOKEN }}
