@@ -19,7 +19,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install stravalib python-dotenv requests
+          pip install stravalib==1.5 python-dotenv requests
       
       - name: Sync Strava Data
         env:

@@ -162,7 +162,14 @@ def create_markdown(activity):
         distance = float(getattr(activity, 'distance', 0) or 0)
         elevation = float(getattr(activity, 'total_elevation_gain', 0) or 0)
         moving_time = getattr(activity, 'moving_time', None)
-        moving_time = moving_time.total_seconds() if moving_time else 0
+        if moving_time:
+            try:
+                moving_time = moving_time.total_seconds()
+            except AttributeError:
+                # 如果total_seconds()方法不可用，尝试直接使用秒数
+                moving_time = getattr(moving_time, 'seconds', 0)
+        else:
+            moving_time = 0
         avg_heartrate = float(getattr(activity, 'average_heartrate', 0) or 0)
         max_heartrate = float(getattr(activity, 'max_heartrate', 0) or 0)
         calories = float(getattr(activity, 'calories', 0) or 0)
