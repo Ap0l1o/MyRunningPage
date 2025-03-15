@@ -2,9 +2,15 @@
  * @type {import('gatsby').GatsbyConfig}
  */
 module.exports = {
-  siteMetadata: {
-    title: `my-running-site`,
-    siteUrl: `https://www.yourdomain.tld`,
-  },
-  plugins: [],
+  plugins: [
+    {
+      resolve: 'gatsby-source-filesystem',
+      options: {
+        name: 'runs',
+        path: `${__dirname}/content/runs`,
+      },
+    },
+    'gatsby-transformer-remark',
+  ],
+  pathPrefix: "/my-running-site"
 }
