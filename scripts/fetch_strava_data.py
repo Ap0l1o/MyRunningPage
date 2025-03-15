@@ -247,12 +247,7 @@ def main():
                 print(f'已保存活动数据：{file_name}')
             except Exception as e:
                 print(f'保存活动 {activity.id} 失败: {str(e)}')
-        
-        # 更新refresh_token
-        env_path = os.path.join(project_root, '.env')
-        with open(env_path, 'w') as f:
-            f.write(f'STRAVA_REFRESH_TOKEN={new_refresh_token}\n')
-            f.write(f'STRAVA_ACCESS_TOKEN={access_token}')
+    
         
         print('\n数据同步完成！')
         
