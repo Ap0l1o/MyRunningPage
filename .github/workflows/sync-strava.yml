@@ -49,7 +49,8 @@ jobs:
       - name: Check for Changes
         id: check_changes
         run: |
-          if git diff --exit-code content/runs/; then
+          git add content/runs/
+          if git diff --staged --quiet; then
             echo "changes=false" >> $GITHUB_OUTPUT
           else
             echo "changes=true" >> $GITHUB_OUTPUT
