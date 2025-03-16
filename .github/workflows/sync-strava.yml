@@ -44,17 +44,25 @@ jobs:
             --client-id "$STRAVA_CLIENT_ID" \
             --client-secret "$STRAVA_CLIENT_SECRET" \
             --refresh-token "$STRAVA_REFRESH_TOKEN"
-      # 步骤5：如果有更新，提交并推送更改
+      # 步骤5：检查是否有文件变更
+      - name: Check for Changes
+        id: check_changes
+        run: |
+          git add content/runs/*
+          git diff --staged --quiet || echo "has_changes=true" >> $GITHUB_OUTPUT
+
+      # 步骤6：如果有更新，提交并推送更改
       - name: Commit and Push
+        if: steps.check_changes.outputs.has_changes == 'true'
         run: |
           git config --global user.name 'Strava Sync Bot'  # 设置Git提交用户名
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'  # 设置Git提交邮箱
-          git add content/runs/*
           git commit -m "Update running data"  # 提交更改
           git push origin data  # 推送到data分支
       
-      # 步骤6：触发网站部署工作流
+      # 步骤7：触发网站部署工作流
       - name: Trigger Deploy Workflow
+        if: steps.check_changes.outputs.has_changes == 'true'
         uses: peter-evans/repository-dispatch@v2
         with:
           event-type: deploy-site  # 触发deploy-site事件
