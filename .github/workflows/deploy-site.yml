@@ -1,0 +1,61 @@
+# 工作流名称：部署网站
+name: Deploy Site
+
+# 触发条件：
+# 1. 当收到repository_dispatch事件且类型为deploy-site时触发
+# 2. 可以手动在GitHub Actions界面触发
+on:
+  repository_dispatch:
+    types: [deploy-site]
+  workflow_dispatch:
+
+# 工作流所需权限配置
+# contents: write - 允许工作流对仓库内容进行写入操作
+permissions:
+  contents: write
+
+# 定义工作流中的作业
+jobs:
+  # 部署作业
+  deploy:
+    # 指定运行环境为最新版Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      # 步骤1：检出代码
+      # 使用actions/checkout@v3动作获取仓库代码
+      # 指定检出data分支
+      - uses: actions/checkout@v3
+        with:
+          ref: data
+      
+      # 步骤2：设置Node.js环境
+      # 使用actions/setup-node@v3动作配置Node.js
+      # 指定Node.js版本为18，启用npm缓存
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      # 步骤3：安装项目依赖
+      # 使用npm ci命令进行依赖安装，这比npm install更适合CI环境
+      - name: Install Dependencies
+        run: npm ci
+      
+      # 步骤4：构建网站
+      # 运行npm run build命令构建网站
+      - name: Build Site
+        run: npm run build
+      
+      # 步骤5：部署到GitHub Pages
+      # 使用peaceiris/actions-gh-pages@v3动作部署到GitHub Pages
+      # 配置GitHub token、发布目录、目标分支、提交信息等
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          publish_branch: gh-pages
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: "Deploy website"
