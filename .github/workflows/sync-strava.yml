@@ -49,6 +49,7 @@ jobs:
         run: |
           git config --global user.name 'Strava Sync Bot'  # 设置Git提交用户名
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'  # 设置Git提交邮箱
+          git add content/runs/*
           git commit -m "Update running data"  # 提交更改
           git push origin data  # 推送到data分支
       
