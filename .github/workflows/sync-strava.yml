@@ -44,18 +44,7 @@ jobs:
             --client-id "$STRAVA_CLIENT_ID" \
             --client-secret "$STRAVA_CLIENT_SECRET" \
             --refresh-token "$STRAVA_REFRESH_TOKEN"
-      
-      # 步骤5：检查是否有数据更新
-      - name: Check for Changes
-        id: check_changes
-        run: |
-          if git diff --exit-code content/runs/; then
-            echo "changes=false" >> $GITHUB_OUTPUT
-          else
-            echo "changes=true" >> $GITHUB_OUTPUT
-          fi
-      
-      # 步骤6：如果有更新，提交并推送更改
+      # 步骤5：如果有更新，提交并推送更改
       - name: Commit and Push
         if: steps.check_changes.outputs.changes == 'true'
         run: |
@@ -65,7 +54,7 @@ jobs:
           git commit -m "Update running data"  # 提交更改
           git push origin data  # 推送到data分支
       
-      # 步骤7：触发网站部署工作流
+      # 步骤6：触发网站部署工作流
       - name: Trigger Deploy Workflow
         if: steps.check_changes.outputs.changes == 'true'
         uses: peter-evans/repository-dispatch@v2
