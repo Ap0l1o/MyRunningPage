@@ -23,13 +23,14 @@ const YearlyChart = ({ data }) => {
                 style={{ fontSize: 12 }}
                 flyoutStyle={{ stroke: '#fc4c02', strokeWidth: 1, fill: 'white' }}
                 flyoutPadding={{ top: 5, bottom: 5, left: 10, right: 10 }}
+                activateData={true}
               />
             }
-            labels={({ datum }) => `${datum.y.toFixed(1)}km`}
+            labels={({ datum }) => `${datum.x}: ${datum.y.toFixed(1)}km`}
           />
           <VictoryAxis
             style={{
-              tickLabels: { fontSize: 12, padding: 5 },
+              tickLabels: { fontSize: 12, padding: 5, angle: -45, textAnchor: 'end' },
               grid: { stroke: 'none' }
             }}
           />
