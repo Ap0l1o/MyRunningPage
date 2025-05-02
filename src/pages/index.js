@@ -231,35 +231,34 @@ const IndexPage = ({ data }) => {
               })}
           </tbody>
         </table>
-        {/* 分页按钮修复，确保事件绑定和禁用逻辑 */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px', gap: '10px' }}>
-          <button
-            onClick={() => setCurrentPage(currentPage - 1)}
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+          <button 
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '5px',
-              border: 'none',
-              background: currentPage === 1 ? '#eee' : '#fc4c02',
-              color: currentPage === 1 ? '#aaa' : '#fff',
+            style={{ 
+              padding: '8px 16px', 
+              margin: '0 5px', 
+              background: currentPage === 1 ? '#e0e0e0' : '#fc4c02', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '4px',
               cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
             }}
           >
             上一页
           </button>
-          <span style={{ alignSelf: 'center' }}>
-            第 {currentPage} 页 / 共 {Math.ceil(runs.length / itemsPerPage)} 页
-          </span>
-          <button
-            onClick={() => setCurrentPage(currentPage + 1)}
-            disabled={currentPage === Math.ceil(runs.length / itemsPerPage)}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '5px',
-              border: 'none',
-              background: currentPage === Math.ceil(runs.length / itemsPerPage) ? '#eee' : '#fc4c02',
-              color: currentPage === Math.ceil(runs.length / itemsPerPage) ? '#aaa' : '#fff',
-              cursor: currentPage === Math.ceil(runs.length / itemsPerPage) ? 'not-allowed' : 'pointer'
+          <span style={{ padding: '8px 16px' }}>第 {currentPage} 页</span>
+          <button 
+            onClick={() => setCurrentPage(prev => prev + 1)}
+            disabled={currentPage * itemsPerPage >= runs.length}
+            style={{ 
+              padding: '8px 16px', 
+              margin: '0 5px', 
+              background: currentPage * itemsPerPage >= runs.length ? '#e0e0e0' : '#fc4c02', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '4px',
+              cursor: currentPage * itemsPerPage >= runs.length ? 'not-allowed' : 'pointer'
             }}
           >
             下一页
