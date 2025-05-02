@@ -23,6 +23,7 @@ export const query = graphql`
           max_heartrate
           calories
         }
+        fileAbsolutePath
       }
     }
   }
@@ -52,7 +53,7 @@ const IndexPage = ({ data }) => {
           return true
       }
     }).map(run => ({
-      x: new Date(run.frontmatter.date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }),
+      x: new Date(run.frontmatter.date).toISOString().slice(0, 10), // 修正为yyyy-mm-dd格式
       y: run.frontmatter.distance / 1000,
       pace: `${Math.floor(run.frontmatter.avg_pace)}:${Math.floor((run.frontmatter.avg_pace % 1) * 60).toString().padStart(2, '0')}`,
       heartrate: Math.round(run.frontmatter.avg_heartrate || 0)
@@ -100,16 +101,18 @@ const IndexPage = ({ data }) => {
     const date = new Date(run.frontmatter.date)
     const currentYear = new Date().getFullYear()
     if (date.getFullYear() === currentYear) {
-      const monthKey = date.toLocaleDateString('zh-CN', { month: 'short' })
-      if (!acc[monthKey]) acc[monthKey] = 0
-      acc[monthKey] += run.frontmatter.distance / 1000
+      const monthIdx = date.getMonth() // 0-11
+      if (!acc[monthIdx]) acc[monthIdx] = 0
+      acc[monthIdx] += run.frontmatter.distance / 1000
     }
     return acc
   }, {})
 
-  const yearlyChartData = Object.entries(yearlyData).map(([month, distance]) => ({
-    x: month,
-    y: distance
+  // 生成完整的12个月份数据
+  const monthLabels = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']
+  const yearlyChartData = monthLabels.map((label, idx) => ({
+    x: label,
+    y: yearlyData[idx] || 0
   }))
 
   return (
@@ -184,7 +187,7 @@ const IndexPage = ({ data }) => {
               <th style={{ padding: '12px', textAlign: 'right' }}>配速</th>
               <th style={{ padding: '12px', textAlign: 'right' }}>心率</th>
               <th style={{ padding: '12px', textAlign: 'right' }}>海拔 (m)</th>
-              <th style={{ padding: '12px', textAlign: 'right' }}>卡路里</th>
+              {/* <th style={{ padding: '12px', textAlign: 'right' }}>卡路里</th>  // 删除此行 */}
             </tr>
           </thead>
           <tbody>
@@ -196,46 +199,67 @@ const IndexPage = ({ data }) => {
                 const hours = Math.floor(duration / 3600)
                 const minutes = Math.floor((duration % 3600) / 60)
                 const avgPaceMin = Math.floor(run.frontmatter.avg_pace)
-                const avgPaceSec = Math.floor((run.frontmatter.avg_pace % 1) * 60)
+                const avgPaceSec = Math.round((run.frontmatter.avg_pace % 1) * 60)
                 return (
-                  <tr key={run.frontmatter.date} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: '12px' }}>{new Date(run.frontmatter.date).toLocaleDateString('zh-CN')}</td>
-                    <td style={{ padding: '12px', textAlign: 'right' }}>{(run.frontmatter.distance / 1000).toFixed(2)}</td>
-                    <td style={{ padding: '12px', textAlign: 'right' }}>{hours}小时{minutes}分钟</td>
-                    <td style={{ padding: '12px', textAlign: 'right' }}>{avgPaceMin}:{avgPaceSec.toString().padStart(2, '0')}/公里</td>
-                    <td style={{ padding: '12px', textAlign: 'right' }}>{Math.round(run.frontmatter.avg_heartrate || 0)}</td>
-                    <td style={{ padding: '12px', textAlign: 'right' }}>{run.frontmatter.elevation}</td>
-                    <td style={{ padding: '12px', textAlign: 'right' }}>{Math.round(run.frontmatter.calories || 0)}</td>
+                  <tr key={run.frontmatter.date} style={{ borderBottom: '1px solid #f5f5f5' }}>
+                    <td style={{ padding: '10px', fontWeight: 500 }}>
+                      {
+                        (() => {
+                          // 从文件路径中提取时间信息
+                          // 例如 .../14321775190_2025-04-29T19-57-36.md
+                          const match = run.fileAbsolutePath && run.fileAbsolutePath.match(/_(\d{4}-\d{2}-\d{2}T\d{2}-\d{2})/)
+                          if (match) {
+                            const [date, time] = match[1].split('T')
+                            return `${date} ${time.replace('-', ':')}`
+                          }
+                          // fallback：只显示日期
+                          const date = new Date(run.frontmatter.date)
+                          const y = date.getFullYear()
+                          const m = (date.getMonth() + 1).toString().padStart(2, '0')
+                          const d = date.getDate().toString().padStart(2, '0')
+                          return `${y}-${m}-${d}`
+                        })()
+                      }
+                    </td>
+                    <td style={{ padding: '10px', textAlign: 'right' }}>{(run.frontmatter.distance / 1000).toFixed(2)}</td>
+                    <td style={{ padding: '10px', textAlign: 'right' }}>{hours}小时{minutes}分钟</td>
+                    <td style={{ padding: '10px', textAlign: 'right' }}>{avgPaceMin}'{avgPaceSec.toString().padStart(2, '0')}/km</td>
+                    <td style={{ padding: '10px', textAlign: 'right' }}>{Math.round(run.frontmatter.avg_heartrate || 0)}</td>
+                    <td style={{ padding: '10px', textAlign: 'right' }}>{Math.round(run.frontmatter.elevation || 0)}</td>
                   </tr>
                 )
               })}
           </tbody>
         </table>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '20px' }}>
+        {/* 分页按钮修复，确保事件绑定和禁用逻辑 */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px', gap: '10px' }}>
           <button
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            onClick={() => setCurrentPage(currentPage - 1)}
             disabled={currentPage === 1}
             style={{
               padding: '8px 16px',
-              background: currentPage === 1 ? '#f0f0f0' : '#fc4c02',
-              color: currentPage === 1 ? '#666' : 'white',
-              border: 'none',
               borderRadius: '5px',
+              border: 'none',
+              background: currentPage === 1 ? '#eee' : '#fc4c02',
+              color: currentPage === 1 ? '#aaa' : '#fff',
               cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
             }}
           >
             上一页
           </button>
+          <span style={{ alignSelf: 'center' }}>
+            第 {currentPage} 页 / 共 {Math.ceil(runs.length / itemsPerPage)} 页
+          </span>
           <button
-            onClick={() => setCurrentPage(p => p + 1)}
-            disabled={currentPage * itemsPerPage >= runs.length}
+            onClick={() => setCurrentPage(currentPage + 1)}
+            disabled={currentPage === Math.ceil(runs.length / itemsPerPage)}
             style={{
               padding: '8px 16px',
-              background: currentPage * itemsPerPage >= runs.length ? '#f0f0f0' : '#fc4c02',
-              color: currentPage * itemsPerPage >= runs.length ? '#666' : 'white',
-              border: 'none',
               borderRadius: '5px',
-              cursor: currentPage * itemsPerPage >= runs.length ? 'not-allowed' : 'pointer'
+              border: 'none',
+              background: currentPage === Math.ceil(runs.length / itemsPerPage) ? '#eee' : '#fc4c02',
+              color: currentPage === Math.ceil(runs.length / itemsPerPage) ? '#aaa' : '#fff',
+              cursor: currentPage === Math.ceil(runs.length / itemsPerPage) ? 'not-allowed' : 'pointer'
             }}
           >
             下一页

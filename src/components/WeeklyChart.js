@@ -1,12 +1,46 @@
 import React from 'react'
 import { VictoryBar, VictoryChart, VictoryTheme, VictoryLabel, VictoryAxis, VictoryContainer, VictoryTooltip } from 'victory'
 
+const getWeekDates = () => {
+  // 获取本周周一到周日的日期字符串（格式与 data.x 一致）
+  const now = new Date()
+  const day = now.getDay() || 7 // 周日为0，转为7
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - day + 1)
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    // 格式化为 yyyy-mm-dd
+    return d.toISOString().slice(0, 10)
+  })
+}
+
 const WeeklyChart = ({ data }) => {
-  // 确保数据按日期升序排序
-  const sortedData = [...data].sort((a, b) => {
-    const dateA = new Date(a.x)
-    const dateB = new Date(b.x)
-    return dateA - dateB
+  // 生成本周完整日期
+  const weekDates = getWeekDates()
+  // 将原始数据映射到本周日期，缺失的补0
+  const dataMap = Object.fromEntries(
+    data.map(d => {
+      // 尝试将 d.x 统一为 yyyy-mm-dd 格式
+      let dateStr = ''
+      if (typeof d.x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.x)) {
+        dateStr = d.x
+      } else {
+        const dt = new Date(d.x)
+        if (!isNaN(dt)) {
+          dateStr = dt.toISOString().slice(0, 10)
+        } else {
+          dateStr = String(d.x).slice(0, 10)
+        }
+      }
+      return [dateStr, d]
+    })
+  )
+  const filledData = weekDates.map(date => {
+    const d = dataMap[date]
+    return d
+      ? { ...d, x: date }
+      : { x: date, y: 0, pace: '-', heartrate: '-' }
   })
 
   return (
@@ -21,25 +55,37 @@ const WeeklyChart = ({ data }) => {
           padding={{ top: 30, bottom: 60, left: 40, right: 40 }}
         >
           <VictoryBar
-            data={sortedData}
-            style={{ 
-              data: { fill: '#fc4c02', width: 15, strokeWidth: 0 }
+            data={filledData}
+            style={{
+              data: {
+                fill: ({ datum }) => datum.y > 0 ? '#fc4c02' : '#e0e0e0', // 有数据橙色，无数据灰色
+                width: 15,
+                strokeWidth: 0
+              }
             }}
             labelComponent={
               <VictoryTooltip
                 style={{ fontSize: 12 }}
                 flyoutStyle={{ stroke: '#fc4c02', strokeWidth: 1, fill: 'white' }}
                 flyoutPadding={{ top: 5, bottom: 5, left: 10, right: 10 }}
+                constrainToVisibleArea
               />
             }
-            labels={({ datum }) => `${datum.y.toFixed(1)}km\n配速: ${datum.pace}'/km\n心率: ${datum.heartrate}次/分钟`}
+            labels={({ datum }) => datum.y > 0 ? `${datum.y.toFixed(1)}km\n配速: ${datum.pace}'/km\n心率: ${datum.heartrate}次/分钟` : '无数据'}
           />
           <VictoryAxis
+            tickValues={weekDates}
+            tickFormat={d => {
+              // 显示为 周一、周二...周日
+              const weekMap = ['一','二','三','四','五','六','日']
+              const idx = weekDates.indexOf(d)
+              return idx !== -1 ? `周${weekMap[idx]}` : d
+            }}
             style={{
-              tickLabels: { fontSize: 12, padding: 5, angle: -45, textAnchor: 'end' },
+              tickLabels: { fontSize: 12, padding: 5, angle: 0, textAnchor: 'middle' },
               grid: { stroke: 'none' }
             }}
-            tickLabelComponent={<VictoryLabel dy={0} dx={-5} />}
+            tickLabelComponent={<VictoryLabel dy={0} dx={0} />}
           />
           <VictoryAxis dependentAxis
             style={{
