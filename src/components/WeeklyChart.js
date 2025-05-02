@@ -69,6 +69,7 @@ const WeeklyChart = ({ data }) => {
                 flyoutStyle={{ stroke: '#fc4c02', strokeWidth: 1, fill: 'white' }}
                 flyoutPadding={{ top: 5, bottom: 5, left: 10, right: 10 }}
                 constrainToVisibleArea
+                activateData={true}
               />
             }
             labels={({ datum }) => datum.y > 0 ? `${datum.y.toFixed(1)}km\n配速: ${datum.pace}'/km\n心率: ${datum.heartrate}次/分钟` : '无数据'}

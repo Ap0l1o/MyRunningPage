@@ -23,6 +23,7 @@ const YearlyChart = ({ data }) => {
                 style={{ fontSize: 12 }}
                 flyoutStyle={{ stroke: '#fc4c02', strokeWidth: 1, fill: 'white' }}
                 flyoutPadding={{ top: 5, bottom: 5, left: 10, right: 10 }}
+                constrainToVisibleArea
                 activateData={true}
               />
             }
