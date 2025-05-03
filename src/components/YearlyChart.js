@@ -1,7 +1,33 @@
 import React from 'react'
 import { VictoryBar, VictoryChart, VictoryTheme, VictoryLabel, VictoryAxis, VictoryContainer, VictoryTooltip } from 'victory'
 
-const YearlyChart = ({ data }) => {
+const YearlyChart = ({ data, runs }) => {
+  // 计算每月的平均配速和心率
+  const monthlyStats = data.map(monthData => {
+    const monthRuns = runs.filter(run => {
+      const runDate = new Date(run.frontmatter.date);
+      const monthIndex = runDate.getMonth();
+      const monthName = monthData.x.replace('月', '');
+      return monthIndex === parseInt(monthName) - 1;
+    });
+    
+    if (monthRuns.length > 0) {
+      // 计算平均配速
+      const avgPace = monthRuns.reduce((sum, run) => sum + (run.frontmatter.avg_pace || 0), 0) / monthRuns.length;
+      const paceMin = Math.floor(avgPace);
+      const paceSec = Math.round((avgPace - paceMin) * 60);
+      
+      // 计算平均心率
+      const avgHeartRate = monthRuns.reduce((sum, run) => sum + (run.frontmatter.avg_heartrate || 0), 0) / monthRuns.length;
+      
+      return {
+        ...monthData,
+        pace: `${paceMin}'${paceSec.toString().padStart(2, '0')}"`,
+        heartrate: Math.round(avgHeartRate)
+      };
+    }
+    return monthData;
+  });
   return (
     <div style={{ flex: '1 1 300px', minWidth: '300px', background: 'white', padding: '15px', borderRadius: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '300px', display: 'flex', flexDirection: 'column' }}>
       <h3 style={{ margin: '0 0 15px 0', color: '#333', fontSize: '16px' }}>年度统计</h3>
@@ -15,8 +41,14 @@ const YearlyChart = ({ data }) => {
         >
           <VictoryBar
             data={data}
+            // 修改后的 VictoryBar 样式配置
             style={{ 
-              data: { fill: '#fc4c02', width: 15, strokeWidth: 0 }
+              data: { 
+                fill: '#fc4c02', 
+                width: 15, 
+                strokeWidth: 0,
+                cornerRadius: { top: 5, bottom: 5 }
+              }
             }}
             labelComponent={
               <VictoryTooltip
@@ -27,7 +59,12 @@ const YearlyChart = ({ data }) => {
                 activateData={true}
               />
             }
-            labels={({ datum }) => `${datum.x}: ${datum.y.toFixed(1)}km`}
+            labels={({ datum }) => {
+              const stats = monthlyStats.find(m => m.x === datum.x);
+              return datum.y > 0
+                ? `${datum.x}: ${datum.y.toFixed(1)}km\n配速: ${stats.pace || '-'}/km\n心率: ${stats.heartrate || '-'}次/分钟`
+                : `${datum.x}: 无跑步记录`;
+            }}
           />
           <VictoryAxis
             style={{

@@ -12,5 +12,6 @@ module.exports = {
     },
     'gatsby-transformer-remark',
   ],
-  pathPrefix: "/my-running-site"
+  pathPrefix: "/MyRunningPage",
+  assetPrefix: "/MyRunningPage",
 }

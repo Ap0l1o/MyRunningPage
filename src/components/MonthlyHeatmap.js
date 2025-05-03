@@ -1,7 +1,7 @@
 import React from 'react'
 import '../styles/calendar-heatmap.css'
 
-const MonthlyHeatmap = ({ startDate, endDate, calendarData, runs, maxDistance }) => {
+const MonthlyHeatmap = ({ startDate, endDate, calendarData, maxDistance }) => {
   // 获取当前月份的第一天是星期几（0是星期日，1是星期一，以此类推）
   const firstDayOfMonth = new Date(startDate).getDay();
   // 调整为周一为一周的第一天（0是周一，6是周日）
@@ -16,6 +16,20 @@ const MonthlyHeatmap = ({ startDate, endDate, calendarData, runs, maxDistance })
   for (let i = 0; i < firstWeekdayOfMonth; i++) {
     calendarGrid.push(null);
   }
+  
+  // 计算每天的累积跑步距离
+  const dailyTotalDistances = {};
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(startDate.getFullYear(), startDate.getMonth(), day);
+    const formattedDate = date.toISOString().split('T')[0];
+    const dayRuns = calendarData.filter(item => item.day === formattedDate);
+    const totalDistance = dayRuns.reduce((sum, run) => sum + run.value, 0);
+    dailyTotalDistances[formattedDate] = totalDistance;
+  }
+  
+  // 获取当月所有天中最大的累积跑步距离
+  const maxDailyDistance = Math.max(...Object.values(dailyTotalDistances));
+  
   // 添加当月的日期
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(startDate.getFullYear(), startDate.getMonth(), day);
@@ -24,8 +38,9 @@ const MonthlyHeatmap = ({ startDate, endDate, calendarData, runs, maxDistance })
     calendarGrid.push({
       day,
       date: formattedDate,
-      value: runData ? runData.value : 0,
-      run: runs.find(r => r.frontmatter.date === formattedDate)
+      value: dailyTotalDistances[formattedDate] || 0,
+      pace: runData ? runData.pace : null,
+      heartrate: runData ? runData.heartrate : null
     });
   }
   
@@ -51,19 +66,20 @@ const MonthlyHeatmap = ({ startDate, endDate, calendarData, runs, maxDistance })
     
     const { day, value } = dayData;
     
-    // 计算圆点大小，基于跑步距离
-    const baseSize = 10; // 基础大小，从14减小到10
-    const maxSize = 18; // 最大大小，从28减小到18
-    const minSize = 8; // 最小大小，从10减小到8
-    const size = value ? Math.max(minSize, Math.min(maxSize, baseSize + (value / maxDistance) * (maxSize - baseSize))) : 0;
+    // 计算圆点大小，基于当天累积跑步距离
+    const baseSize = 10; // 基础大小
+    const maxSize = 18; // 最大大小
+    const minSize = 8; // 最小大小
+    const size = value ? Math.max(minSize, Math.min(maxSize, baseSize + (value / maxDailyDistance) * (maxSize - baseSize))) : 0;
     
-    // 计算配速（如果有跑步数据）
-    let paceInfo = '';
-    if (dayData.run) {
-      const pace = (dayData.run.frontmatter.duration / 60) / (dayData.run.frontmatter.distance / 1000);
-      const paceMin = Math.floor(pace);
-      const paceSec = Math.round((pace - paceMin) * 60);
-      paceInfo = `配速: ${paceMin}'${paceSec.toString().padStart(2, '0')}"/km`;
+    // 获取配速和心率信息
+    let paceInfo = '-';
+    let heartRateInfo = '-';
+    if (dayData.pace) {
+      paceInfo = `${Math.floor(dayData.pace)}'${Math.floor((dayData.pace % 1) * 60).toString().padStart(2, '0')}/km`;
+    }
+    if (dayData.heartrate) {
+      heartRateInfo = `${Math.round(dayData.heartrate)}次/分钟`;
     }
     
     // 确定圆点颜色类
@@ -75,7 +91,8 @@ const MonthlyHeatmap = ({ startDate, endDate, calendarData, runs, maxDistance })
     
     return (
       <div className="calendar-day" title={value ? `${day}日: ${value.toFixed(2)}km
-${paceInfo}` : `${day}日: 无跑步记录`}>
+配速: ${paceInfo}
+心率: ${heartRateInfo}` : `${day}日: 无跑步记录`}>
         <div className="day-number">{day}</div>
         {value > 0 && (
           <div 
