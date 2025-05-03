@@ -79,7 +79,9 @@ const IndexPage = ({ data }) => {
     const formattedDate = date.toISOString().split('T')[0]; // 转换为YYYY-MM-DD格式
     return {
       day: formattedDate,
-      value: parseFloat((run.frontmatter.distance / 1000).toFixed(2))
+      value: parseFloat((run.frontmatter.distance / 1000).toFixed(2)),
+      pace: run.frontmatter.avg_pace,
+      heartrate: run.frontmatter.avg_heartrate || 0
     };
   }).sort((a, b) => new Date(a.day) - new Date(b.day));
 
@@ -130,10 +132,9 @@ const IndexPage = ({ data }) => {
               const date = new Date(item.day);
               return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
             })} 
-            runs={runs} 
             maxDistance={maxDistance} 
           />
-          <YearlyChart data={yearlyChartData} />
+          <YearlyChart data={yearlyChartData} runs={runs} />
         </div>
       </div>
 

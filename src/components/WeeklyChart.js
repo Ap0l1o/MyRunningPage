@@ -56,11 +56,13 @@ const WeeklyChart = ({ data }) => {
         >
           <VictoryBar
             data={filledData}
+            // 修改后的 VictoryBar 样式配置
             style={{
               data: {
-                fill: ({ datum }) => datum.y > 0 ? '#fc4c02' : '#e0e0e0', // 有数据橙色，无数据灰色
+                fill: ({ datum }) => datum.y > 0 ? '#fc4c02' : '#e0e0e0',
                 width: 15,
-                strokeWidth: 0
+                strokeWidth: 0,
+                cornerRadius: { top: 5, bottom: 5 }
               }
             }}
             labelComponent={
