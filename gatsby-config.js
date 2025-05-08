@@ -11,7 +11,5 @@ module.exports = {
       },
     },
     'gatsby-transformer-remark',
-  ],
-  pathPrefix: "/MyRunningPage",
-  assetPrefix: "/MyRunningPage",
+  ]
 }
