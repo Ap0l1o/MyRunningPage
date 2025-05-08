@@ -192,7 +192,7 @@ const IndexPage = ({ data }) => {
             </tr>
           </thead>
           <tbody>
-            {runs
+            {[...runs]
               .sort((a, b) => new Date(b.frontmatter.date) - new Date(a.frontmatter.date))
               .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
               .map((run) => {
