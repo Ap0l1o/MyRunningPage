@@ -1,10 +1,11 @@
 import React from 'react'
+import runningImage from '../images/running.png'
 
 const Avatar = () => {
   return (
     <div style={{ flex: '0 1 200px', minWidth: '200px' }}>
       <img 
-        src="/MyRunningPage/images/running.png" 
+        src={runningImage} 
         alt="头像"
         style={{ 
           width: '100px', 
