@@ -2,7 +2,7 @@
  * @type {import('gatsby').GatsbyConfig}
  */
 module.exports = {
-  pathPrefix: '/TraeRunDemo',
+  pathPrefix: '/MyRunningPage',
   plugins: [
     {
       resolve: 'gatsby-source-filesystem',
