@@ -72,9 +72,9 @@ const Profile = () => {
       </div>
 
       {/* 内容区域 */}
-      <div style={{ flex: 1, position: 'relative', minHeight: 0, overflow: 'hidden', height: '250px', padding: '2px 0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <div className="profile-container" style={{ flex: 1, position: 'relative', minHeight: 0, overflow: 'hidden', height: '250px', padding: '2px 0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {/* 个人简介 */}
-        <div style={{
+        <div className="profile-intro" style={{
           background: '#f8f9fa',
           borderRadius: '8px',
           padding: '8px',
@@ -105,7 +105,7 @@ const Profile = () => {
         </div>
         
         {/* 个人最好成绩 */}
-        <div style={{
+        <div className="profile-pb" style={{
           background: '#f8f9fa',
           borderRadius: '8px',
           padding: '8px',
@@ -126,7 +126,7 @@ const Profile = () => {
           }}>
             <span>⏱️</span> 我的 PB
           </h3>
-          <div style={{
+          <div className="profile-pb-grid" style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
             gap: '4px',

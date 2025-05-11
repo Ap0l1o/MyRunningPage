@@ -67,6 +67,8 @@ const IndexPage = ({ data }) => {
           }
           .dashboard-cards > * {
             margin-bottom: 15px;
+            min-height: 300px !important;
+            height: auto !important;
           }
           .summary-cards {
             display: grid !important;
@@ -90,6 +92,19 @@ const IndexPage = ({ data }) => {
             transform: scale(0.9) !important;
             transform-origin: center !important;
             margin-left: -10px !important;
+          }
+          /* 移动端个人简介和PB信息显示 */
+          .profile-container {
+            overflow: visible !important;
+          }
+          .profile-intro, .profile-pb {
+            display: block !important;
+            visibility: visible !important;
+          }
+          .profile-pb-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 8px !important;
           }
           /* 所有设备上都确保完整显示 */
           @media (min-width: 769px) {
