@@ -105,6 +105,14 @@ const IndexPage = ({ data }) => {
             display: grid !important;
             grid-template-columns: repeat(2, 1fr) !important;
             gap: 8px !important;
+            height: auto !important;
+            min-height: 150px !important;
+            overflow: visible !important;
+          }
+          .profile-pb {
+            height: auto !important;
+            min-height: 200px !important;
+            overflow: visible !important;
           }
           /* 所有设备上都确保完整显示 */
           @media (min-width: 769px) {
