@@ -11,6 +11,13 @@ module.exports = {
         path: `${__dirname}/content/runs`,
       },
     },
+    {
+      resolve: 'gatsby-source-filesystem',
+      options: {
+        name: 'profile',
+        path: `${__dirname}/src/profile`,
+      },
+    },
     'gatsby-transformer-remark',
     'gatsby-plugin-image',
     'gatsby-plugin-sharp',

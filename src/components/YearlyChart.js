@@ -29,7 +29,7 @@ const YearlyChart = ({ data, runs }) => {
     return monthData;
   });
   return (
-    <div style={{ flex: '1 1 300px', minWidth: '300px', background: 'white', padding: '15px', borderRadius: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '300px', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ flex: '1 1 100%', minWidth: '280px', maxWidth: '100%', background: 'white', padding: '15px', borderRadius: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '300px', display: 'flex', flexDirection: 'column' }}>
       <h3 style={{ margin: '0 0 15px 0', color: '#333', fontSize: '16px' }}>年度统计</h3>
       <div style={{ flex: 1, position: 'relative', minHeight: 0, overflow: 'hidden', height: '250px', padding: '5px 0' }}>
         <VictoryChart
@@ -37,7 +37,7 @@ const YearlyChart = ({ data, runs }) => {
           domainPadding={{ x: 30 }}
           height={250}
           containerComponent={<VictoryContainer responsive={false}/>}
-          padding={{ top: 30, bottom: 40, left: 40, right: 40 }}
+          padding={{ top: 30, bottom: 40, left: 30, right: 30 }}
         >
           <VictoryBar
             data={data}
@@ -68,7 +68,7 @@ const YearlyChart = ({ data, runs }) => {
           />
           <VictoryAxis
             style={{
-              tickLabels: { fontSize: 12, padding: 5, angle: -45, textAnchor: 'end' },
+              tickLabels: { fontSize: 11, padding: 5, angle: -45, textAnchor: 'end' },
               grid: { stroke: 'none' }
             }}
           />

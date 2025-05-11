@@ -44,15 +44,16 @@ const WeeklyChart = ({ data }) => {
   })
 
   return (
-    <div style={{ flex: '1 1 300px', minWidth: '300px', background: 'white', padding: '15px', borderRadius: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '300px', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ flex: '1 1 100%', minWidth: '280px', maxWidth: '100%', background: 'white', padding: '15px', borderRadius: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '300px', display: 'flex', flexDirection: 'column' }}>
       <h3 style={{ margin: '0 0 15px 0', color: '#333', fontSize: '16px' }}>本周跑量</h3>
-      <div style={{ flex: 1, position: 'relative', minHeight: 0, overflow: 'hidden', height: '250px', padding: '5px 0' }}>
+      <div className="weekly-chart-container" style={{ flex: 1, position: 'relative', minHeight: 0, overflow: 'hidden', height: '250px', padding: '5px 0', width: '100%' }}>
         <VictoryChart
           theme={VictoryTheme.material}
           domainPadding={{ x: 20 }}
           height={250}
-          containerComponent={<VictoryContainer responsive={false}/>}
-          padding={{ top: 30, bottom: 60, left: 40, right: 40 }}
+          width={300}
+          containerComponent={<VictoryContainer responsive={true}/>}
+          padding={{ top: 30, bottom: 60, left: 25, right: 25 }}
         >
           <VictoryBar
             data={filledData}
@@ -85,7 +86,7 @@ const WeeklyChart = ({ data }) => {
               return idx !== -1 ? `周${weekMap[idx]}` : d
             }}
             style={{
-              tickLabels: { fontSize: 12, padding: 5, angle: 0, textAnchor: 'middle' },
+              tickLabels: { fontSize: 10, padding: 2, angle: 0, textAnchor: 'middle' },
               grid: { stroke: 'none' }
             }}
             tickLabelComponent={<VictoryLabel dy={0} dx={0} />}

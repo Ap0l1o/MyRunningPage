@@ -67,9 +67,9 @@ const MonthlyHeatmap = ({ startDate, endDate, calendarData, maxDistance }) => {
     const { day, value } = dayData;
     
     // 计算圆点大小，基于当天累积跑步距离
-    const baseSize = 10; // 基础大小
-    const maxSize = 18; // 最大大小
-    const minSize = 8; // 最小大小
+    const baseSize = 8; // 基础大小
+    const maxSize = 16; // 最大大小
+    const minSize = 6; // 最小大小
     const size = value ? Math.max(minSize, Math.min(maxSize, baseSize + (value / maxDailyDistance) * (maxSize - baseSize))) : 0;
     
     // 获取配速和心率信息
@@ -109,9 +109,9 @@ const MonthlyHeatmap = ({ startDate, endDate, calendarData, maxDistance }) => {
   };
   
   return (
-    <div style={{ flex: '1 1 300px', minWidth: '300px', background: 'white', padding: '15px', borderRadius: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '300px', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ flex: '1 1 100%', minWidth: '280px', maxWidth: '100%', background: 'white', padding: '15px', borderRadius: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '300px', display: 'flex', flexDirection: 'column' }}>
       <h3 style={{ margin: '0 0 15px 0', color: '#333', fontSize: '16px' }}>月度概览</h3>
-      <div className="calendar-container">
+      <div className="calendar-container" style={{ fontSize: '12px' }}>
         <div className="weekday-header">
           <div className="weekday-label">周一</div>
           <div className="weekday-label">周二</div>
