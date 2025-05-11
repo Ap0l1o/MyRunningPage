@@ -137,7 +137,8 @@ const IndexPage = ({ data }) => {
 
   const processData = () => {
     const now = new Date()
-    return runs.filter(run => {
+    // 首先过滤符合时间范围的跑步数据
+    const filteredData = runs.filter(run => {
       const runDate = new Date(run.frontmatter.date)
       const timeDiff = now - runDate
       
@@ -152,12 +153,59 @@ const IndexPage = ({ data }) => {
         default:
           return true
       }
-    }).map(run => ({
-      x: new Date(run.frontmatter.date).toISOString().slice(0, 10), // 修正为yyyy-mm-dd格式
-      y: run.frontmatter.distance / 1000,
-      pace: `${Math.floor(run.frontmatter.avg_pace)}:${Math.floor((run.frontmatter.avg_pace % 1) * 60).toString().padStart(2, '0')}`,
-      heartrate: Math.round(run.frontmatter.avg_heartrate || 0)
-    }))
+    })
+    
+    // 按日期分组数据
+    const groupedByDate = {}
+    
+    filteredData.forEach(run => {
+      const date = new Date(run.frontmatter.date)
+      const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+      
+      if (!groupedByDate[formattedDate]) {
+        groupedByDate[formattedDate] = []
+      }
+      
+      groupedByDate[formattedDate].push(run)
+    })
+    
+    // 合并每天的数据
+    return Object.entries(groupedByDate).map(([date, dayRuns]) => {
+      // 计算总距离
+      const totalDistance = dayRuns.reduce((sum, run) => sum + run.frontmatter.distance / 1000, 0)
+      
+      // 计算加权平均配速
+      let totalWeightedPace = 0
+      let totalHeartRate = 0
+      let totalHeartRateWeight = 0
+      
+      dayRuns.forEach(run => {
+        const distance = run.frontmatter.distance / 1000
+        if (run.frontmatter.avg_pace) {
+          totalWeightedPace += run.frontmatter.avg_pace * distance
+        }
+        
+        if (run.frontmatter.avg_heartrate) {
+          totalHeartRate += run.frontmatter.avg_heartrate * distance
+          totalHeartRateWeight += distance
+        }
+      })
+      
+      // 计算平均配速和心率
+      const avgPace = totalDistance > 0 ? totalWeightedPace / totalDistance : 0
+      const avgHeartRate = totalHeartRateWeight > 0 ? totalHeartRate / totalHeartRateWeight : 0
+      
+      // 添加跑步次数信息
+      const runsCount = dayRuns.length
+      
+      return {
+        x: date,
+        y: parseFloat(totalDistance.toFixed(2)), // 保持精度一致，保留两位小数
+        pace: avgPace > 0 ? `${Math.floor(avgPace)}:${Math.floor((avgPace % 1) * 60).toString().padStart(2, '0')}` : '-',
+        heartrate: avgHeartRate > 0 ? Math.round(avgHeartRate) : '-',
+        runsCount: runsCount
+      }
+    })
   }
 
   const filteredRuns = processData()
@@ -172,17 +220,57 @@ const IndexPage = ({ data }) => {
   const totalDistance = filteredOriginalRuns.reduce((sum, run) => sum + run.frontmatter.distance / 1000, 0)
   const totalDuration = filteredOriginalRuns.reduce((sum, run) => sum + (run.frontmatter.duration || 0), 0)
 
-  // 处理月度日历数据
-  const calendarData = runs.map(run => {
-    // 确保日期格式为YYYY-MM-DD
-    const date = new Date(run.frontmatter.date);
-    const formattedDate = date.toISOString().split('T')[0]; // 转换为YYYY-MM-DD格式
+  // 处理月度日历数据 - 使用与周视图相同的处理方式
+  // 首先按日期分组原始数据
+  const calendarGroupedByDate = {}
+  
+  runs.forEach(run => {
+    const date = new Date(run.frontmatter.date)
+    const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    
+    if (!calendarGroupedByDate[formattedDate]) {
+      calendarGroupedByDate[formattedDate] = []
+    }
+    
+    calendarGroupedByDate[formattedDate].push(run)
+  })
+  
+  // 合并每天的数据
+  const calendarData = Object.entries(calendarGroupedByDate).map(([date, dayRuns]) => {
+    // 计算总距离
+    const totalDistance = dayRuns.reduce((sum, run) => sum + run.frontmatter.distance / 1000, 0)
+    
+    // 计算加权平均配速和心率
+    let totalWeightedPace = 0
+    let totalHeartRate = 0
+    let totalHeartRateWeight = 0
+    
+    dayRuns.forEach(run => {
+      const distance = run.frontmatter.distance / 1000
+      if (run.frontmatter.avg_pace) {
+        totalWeightedPace += run.frontmatter.avg_pace * distance
+      }
+      
+      if (run.frontmatter.avg_heartrate) {
+        totalHeartRate += run.frontmatter.avg_heartrate * distance
+        totalHeartRateWeight += distance
+      }
+    })
+    
+    // 计算平均配速和心率
+    const avgPace = totalDistance > 0 ? totalWeightedPace / totalDistance : 0
+    const avgHeartRate = totalHeartRateWeight > 0 ? totalHeartRate / totalHeartRateWeight : 0
+    
+    // 添加跑步次数信息
+    const runsCount = dayRuns.length
+    
     return {
-      day: formattedDate,
-      value: parseFloat((run.frontmatter.distance / 1000).toFixed(2)),
-      pace: run.frontmatter.avg_pace,
-      heartrate: run.frontmatter.avg_heartrate || 0
-    };
+      day: date,
+      value: parseFloat(totalDistance.toFixed(2)), // 保留两位小数，保持精度一致
+      pace: avgPace,
+      heartrate: avgHeartRate,
+      runsCount: runsCount
+    }
   }).sort((a, b) => new Date(a.day) - new Date(b.day));
 
   // 获取当前日期范围
