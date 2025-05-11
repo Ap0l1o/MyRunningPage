@@ -75,7 +75,9 @@ const WeeklyChart = ({ data }) => {
                 activateData={true}
               />
             }
-            labels={({ datum }) => datum.y > 0 ? `${datum.y.toFixed(1)}km\n配速: ${datum.pace}'/km\n心率: ${datum.heartrate}次/分钟` : '无数据'}
+            labels={({ datum }) => datum.y > 0 ? `${datum.y.toFixed(1)}km${datum.runsCount > 1 ? ` (${datum.runsCount}次跑步)` : ''}
+平均配速: ${datum.pace}'/km
+平均心率: ${datum.heartrate}次/分钟` : '无数据'}
           />
           <VictoryAxis
             tickValues={weekDates}
