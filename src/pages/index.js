@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { VictoryBar, VictoryChart, VictoryTheme, VictoryLabel, VictoryAxis, VictoryContainer } from 'victory'
 import { graphql } from 'gatsby'
+import { window } from 'browser-monads'
 import WeeklyChart from '../components/WeeklyChart'
 import MonthlyHeatmap from '../components/MonthlyHeatmap'
 import YearlyChart from '../components/YearlyChart'
