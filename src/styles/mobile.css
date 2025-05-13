@@ -1,0 +1,74 @@
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+  main {
+    padding: 10px !important;
+  }
+  .dashboard-cards {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .dashboard-cards > * {
+    margin-bottom: 15px;
+    min-height: 300px !important;
+    height: auto !important;
+  }
+  .summary-cards {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .summary-cards > div {
+    padding: 15px !important;
+  }
+  .summary-cards h3 {
+    font-size: 14px !important;
+  }
+  .summary-cards p {
+    font-size: 18px !important;
+  }
+  /* 优化本周跑量图表在移动端的显示 */
+  .weekly-chart-container {
+    overflow: visible !important;
+  }
+  .weekly-chart-container svg {
+    transform: scale(0.9) !important;
+    transform-origin: center !important;
+    margin-left: -10px !important;
+    transform: translateX(-10px) !important;
+  }
+  /* 移动端个人简介和PB信息显示 */
+  .profile-container {
+    overflow: visible !important;
+  }
+  .profile-intro, .profile-pb {
+    display: block !important;
+    visibility: visible !important;
+  }
+  .profile-pb-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    height: auto !important;
+    min-height: 150px !important;
+    overflow: visible !important;
+  }
+  .profile-pb {
+    height: auto !important;
+    min-height: 200px !important;
+    overflow: visible !important;
+  }
+}
+
+/* 所有设备上都确保完整显示 */
+@media (min-width: 769px) {
+  .weekly-chart-container svg {
+    transform: none !important;
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+  .weekly-chart-container > div {
+    width: 100% !important;
+  }
+}

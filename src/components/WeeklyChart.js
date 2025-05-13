@@ -44,8 +44,8 @@ const WeeklyChart = ({ data }) => {
   })
 
   return (
-    <div style={{ flex: '1 1 100%', minWidth: '280px', maxWidth: '100%', background: 'white', padding: '15px', borderRadius: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '300px', display: 'flex', flexDirection: 'column' }}>
-      <h3 style={{ margin: '0 0 15px 0', color: '#333', fontSize: '16px' }}>本周跑量</h3>
+    <div style={{ flex: '1 1 100%', minWidth: '280px', maxWidth: '100%', background: 'white', padding: '20px', borderRadius: '14px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', height: '300px', display: 'flex', flexDirection: 'column' }}>
+      <h3 style={{ margin: '0 0 15px 0', color: '#333', fontSize: '17px', fontWeight: '600' }}>本周跑量</h3>
       <div className="weekly-chart-container" style={{ flex: 1, position: 'relative', minHeight: 0, overflow: 'hidden', height: '250px', padding: '5px 0', width: '100%' }}>
         <VictoryChart
           theme={VictoryTheme.material}
@@ -57,19 +57,22 @@ const WeeklyChart = ({ data }) => {
         >
           <VictoryBar
             data={filledData}
-            // 修改后的 VictoryBar 样式配置
+            // Apple 风格的 VictoryBar 样式配置
+            cornerRadius={{ top: 8 }}
+            barWidth={20}
             style={{
               data: {
-                fill: ({ datum }) => datum.y > 0 ? '#fc4c02' : '#e0e0e0',
-                width: 15,
+                fill: ({ datum }) => datum.y > 0 ? '#fc4c02' : '#f0f0f0',
                 strokeWidth: 0,
-                cornerRadius: { top: 5, bottom: 5 }
+                // 添加渐变效果
+                fillOpacity: 0.9,
+                filter: 'drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.1))',
               }
             }}
             labelComponent={
               <VictoryTooltip
                 style={{ fontSize: 12 }}
-                flyoutStyle={{ stroke: '#fc4c02', strokeWidth: 1, fill: 'white' }}
+                flyoutStyle={{ stroke: 'rgba(252, 76, 2, 0.3)', strokeWidth: 1, fill: 'white', borderRadius: 8, boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)' }}
                 flyoutPadding={{ top: 5, bottom: 5, left: 10, right: 10 }}
                 constrainToVisibleArea
                 activateData={true}
@@ -88,15 +91,17 @@ const WeeklyChart = ({ data }) => {
               return idx !== -1 ? `周${weekMap[idx]}` : d
             }}
             style={{
-              tickLabels: { fontSize: 10, padding: 2, angle: 0, textAnchor: 'middle' },
-              grid: { stroke: 'none' }
+              tickLabels: { fontSize: 11, padding: 5, angle: 0, textAnchor: 'middle', fontWeight: 500, fill: '#555' },
+              grid: { stroke: 'none' },
+              axis: { stroke: '#f0f0f0', strokeWidth: 1 }
             }}
             tickLabelComponent={<VictoryLabel dy={0} dx={0} />}
           />
           <VictoryAxis dependentAxis
             style={{
-              tickLabels: { fontSize: 12, padding: 5 },
-              grid: { stroke: 'none' }
+              tickLabels: { fontSize: 11, padding: 5, fill: '#555', fontWeight: 500 },
+              grid: { stroke: '#f7f7f7', strokeWidth: 1, strokeDasharray: '4, 4' },
+              axis: { stroke: '#f0f0f0', strokeWidth: 1 }
             }}
           />
         </VictoryChart>
