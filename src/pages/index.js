@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { VictoryBar, VictoryChart, VictoryTheme, VictoryLabel, VictoryAxis, VictoryContainer } from 'victory'
 import { graphql } from 'gatsby'
+import { window } from 'browser-monads'
 import WeeklyChart from '../components/WeeklyChart'
 import MonthlyHeatmap from '../components/MonthlyHeatmap'
 import YearlyChart from '../components/YearlyChart'
@@ -40,18 +41,15 @@ const IndexPage = ({ data }) => {
 
   
   useEffect(() => {
-    // 确保只在浏览器环境中执行
-    if (typeof window !== 'undefined') {
-      const handleResize = () => {
-        setIsMobile(window.innerWidth <= 768)
-      }
-      
-      handleResize()
-      window.addEventListener('resize', handleResize)
-      
-      return () => {
-        window.removeEventListener('resize', handleResize)
-      }
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    
+    return () => {
+      window.removeEventListener('resize', handleResize)
     }
   }, [])
 
