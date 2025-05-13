@@ -3,8 +3,22 @@ import React, { useState, useEffect } from 'react'
 const DetailedData = ({ runs }) => {
   const [currentPage, setCurrentPage] = useState(1)
   const [sortedRunData, setSortedRunData] = useState([])
+  const [isMobile, setIsMobile] = useState(false)
   const itemsPerPage = 10
-  const isMobile = window.innerWidth <= 768
+  
+  // 检测移动设备
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsMobile(window.innerWidth <= 768)
+      
+      const handleResize = () => {
+        setIsMobile(window.innerWidth <= 768)
+      }
+      
+      window.addEventListener('resize', handleResize)
+      return () => window.removeEventListener('resize', handleResize)
+    }
+  }, [])
   
   // 从文件路径中提取时间信息的辅助函数
   const getTimeFromPath = (path) => {
