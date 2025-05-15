@@ -12,6 +12,36 @@ import re
 import sys
 
 
+def get_latest_activity_time(runs_dir):
+    try:
+        if not os.path.exists(runs_dir):
+            return None
+        
+        files = glob.glob(os.path.join(runs_dir, '*_*.md'))
+        if not files:
+            return None
+        
+        latest_time = None
+        for file in files:
+            # 从文件名中提取时间戳
+            match = re.search(r'\d+_(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})\.md$', file)
+            if match:
+                time_str = match.group(1)
+                # 将第二个和第三个连字符替换为冒号
+                parts = time_str.split('T')
+                if len(parts) == 2:
+                    date_part = parts[0]  # 保持日期部分不变
+                    time_part = parts[1].replace('-', ':')  # 只替换时间部分的连字符
+                    time_str = f"{date_part} {time_part}"
+                    activity_time = datetime.fromisoformat(time_str)
+                    if latest_time is None or activity_time > latest_time:
+                        latest_time = activity_time
+        
+        return latest_time
+    except Exception as e:
+        print(f'获取最新活动时间失败: {str(e)}')
+        return None
+
 def refresh_access_token(client_id, client_secret, refresh_token, max_retries=3, initial_delay=1):
     # 验证参数
     if not all([client_id, client_secret, refresh_token]):
@@ -41,7 +71,7 @@ def refresh_access_token(client_id, client_secret, refresh_token, max_retries=3,
                 if response.text:
                     try:
                         error_data = response.json()
-                        error_msg += f'，错误信息：{error_data.get("message", "未知错误")}'
+                        error_msg += f'，错误信息：{error_data.get("message", "未知错误")}'                        
                     except:
                         error_msg += f'，响应内容：{response.text}'
                 raise Exception(error_msg)
@@ -60,7 +90,7 @@ def refresh_access_token(client_id, client_secret, refresh_token, max_retries=3,
         
     raise last_exception or Exception('刷新access_token失败，重试次数已用完')
 
-def fetch_strava_activities(client_id, client_secret, refresh_token, start_date, end_date, max_retries=3):
+def fetch_strava_activities(client_id, client_secret, refresh_token, fetch_all=False, max_retries=3):
     access_token, new_refresh_token = refresh_access_token(client_id, client_secret, refresh_token)
     client = Client(access_token=access_token)
     
@@ -74,20 +104,30 @@ def fetch_strava_activities(client_id, client_secret, refresh_token, start_date,
     
     for attempt in range(max_retries):
         try:
-            all_activities = []
-            current_time = start_date
+            # 获取最新活动时间
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(script_dir)
+            runs_dir = os.path.join(project_root, 'content', 'runs')
             
-            while current_time < end_date:
-                # 设置30天的时间窗口
-                window_end = min(current_time + timedelta(days=30), end_date)
-                activities = list(client.get_activities(after=current_time, before=window_end))
+            if fetch_all:
+                print('获取所有历史数据')
+                # 获取所有活动
+                all_activities = list(client.get_activities())
+            else:
+                latest_time = get_latest_activity_time(runs_dir)
                 
-                if activities:
-                    all_activities.extend(activities)
-                    print(f'已获取{current_time.date()}至{window_end.date()}的数据，共{len(all_activities)}条记录')
-                
-                current_time = window_end
+                if latest_time:
+                    # 添加一秒，避免重复获取最新的活动
+                    after_time = latest_time + timedelta(seconds=1)
+                    print(f'获取{after_time.strftime("%Y-%m-%d %H:%M:%S")}之后的新数据')
+                    all_activities = list(client.get_activities(after=after_time))
+                else:
+                    # 如果没有最新活动时间，获取最近30天的活动
+                    after_time = datetime.now() - timedelta(days=30)
+                    print(f'没有找到最新活动时间，获取最近30天的数据')
+                    all_activities = list(client.get_activities(after=after_time))
             
+            print(f'获取到{len(all_activities)}条活动记录')
             return all_activities, new_refresh_token, access_token
         except Exception as e:
             if attempt == max_retries - 1:
@@ -209,43 +249,7 @@ def process_stream_data(streams):
         'elevation_data': elevation_data
     }
 
-def get_activity_splits(client, activity_id):
-    """获取活动的公里分割数据"""
-    # 获取完整的活动详情，包括分割数据
-    activity_detail = client.get_activity(activity_id=activity_id, include_all_efforts=True)
-    return activity_detail
-
-def process_splits(activity):
-    """处理公里分割数据"""
-    splits = []
-    
-    # 获取公里分割数据
-    if hasattr(activity, 'splits_metric') and activity.splits_metric:
-        for i, split in enumerate(activity.splits_metric):
-            # 处理elapsed_time和moving_time，可能是timedelta对象
-            elapsed_time = getattr(split, 'elapsed_time', 0) or 0
-            if hasattr(elapsed_time, 'total_seconds'):
-                elapsed_time = elapsed_time.total_seconds()
-                
-            moving_time = getattr(split, 'moving_time', 0) or 0
-            if hasattr(moving_time, 'total_seconds'):
-                moving_time = moving_time.total_seconds()
-            
-            split_data = {
-                'distance': float(getattr(split, 'distance', 0) or 0),
-                'elapsed_time': float(elapsed_time),
-                'moving_time': float(moving_time),
-                'average_speed': float(getattr(split, 'average_speed', 0) or 0),
-                'pace': 16.6667 / float(getattr(split, 'average_speed', 0) or 1) if float(getattr(split, 'average_speed', 0) or 0) > 0 else 0,
-                'average_heartrate': float(getattr(split, 'average_heartrate', 0) or 0),
-                'elevation_difference': float(getattr(split, 'elevation_difference', 0) or 0),
-                'split_number': i + 1
-            }
-            splits.append(split_data)
-    
-    return splits
-
-def create_markdown(activity, segments=None, stream_data=None, splits=None):
+def create_markdown(activity, segments=None, stream_data=None):
     try:
         start_time = activity.start_date_local
         if not start_time:
@@ -278,39 +282,41 @@ def create_markdown(activity, segments=None, stream_data=None, splits=None):
         max_pace_sec = int((max_pace % 1) * 60)
 
         # 构建frontmatter
-        frontmatter_lines = [
-            f"date: {start_time.strftime('%Y-%m-%d')}",
-            f"distance: {distance:.2f}",
-            f"duration: {moving_time}",
-            f"elevation: {elevation}",
-            f"avg_speed: {avg_speed:.2f}",
-            f"max_speed: {max_speed:.2f}",
-            f"avg_pace: {avg_pace:.2f}",
-            f"max_pace: {max_pace:.2f}",
-            f"avg_heartrate: {avg_heartrate:.1f}",
-            f"max_heartrate: {max_heartrate:.1f}",
-            f"calories: {calories:.1f}"
-        ]
+        frontmatter = {
+            'date': start_time.strftime('%Y-%m-%d'),
+            'distance': f"{distance:.2f}",
+            'duration': f"{moving_time}",
+            'elevation': f"{elevation}",
+            'avg_speed': f"{avg_speed:.2f}",
+            'max_speed': f"{max_speed:.2f}",
+            'avg_pace': f"{avg_pace:.2f}",
+            'max_pace': f"{max_pace:.2f}",
+            'avg_heartrate': f"{avg_heartrate:.1f}",
+            'max_heartrate': f"{max_heartrate:.1f}",
+            'calories': f"{calories:.1f}"
+        }
         
         # 添加分段数据
         if segments:
-            frontmatter_lines.append(f"segments: {json.dumps(segments)}")
-            
-        # 添加公里分割数据
-        if splits:
-            frontmatter_lines.append(f"splits: {json.dumps(splits)}")
+            frontmatter['segments'] = segments
         
         # 添加流数据
         if stream_data:
             if stream_data.get('heartrate_data'):
-                frontmatter_lines.append(f"heartrate_data: {json.dumps(stream_data['heartrate_data'])}")
+                frontmatter['heartrate_data'] = stream_data['heartrate_data']
             if stream_data.get('pace_data'):
-                frontmatter_lines.append(f"pace_data: {json.dumps(stream_data['pace_data'])}")
+                frontmatter['pace_data'] = stream_data['pace_data']
             if stream_data.get('elevation_data'):
-                frontmatter_lines.append(f"elevation_data: {json.dumps(stream_data['elevation_data'])}")
+                frontmatter['elevation_data'] = stream_data['elevation_data']
         
-        # 构建frontmatter部分
-        frontmatter = "---\n" + "\n".join(frontmatter_lines) + "\n---\n\n"
+        # 将frontmatter转换为YAML格式
+        frontmatter_str = '---\n'
+        for key, value in frontmatter.items():
+            if key in ['segments', 'heartrate_data', 'pace_data', 'elevation_data']:
+                frontmatter_str += f"{key}: {json.dumps(value)}\n"
+            else:
+                frontmatter_str += f"{key}: {value}\n"
+        frontmatter_str += '---\n\n'
         
         # 构建Markdown内容
         content = f"# {start_time.strftime('%Y年%m月%d日')} 跑步数据\n\n"
@@ -323,22 +329,6 @@ def create_markdown(activity, segments=None, stream_data=None, splits=None):
         content += f"- 最大心率：{max_heartrate:.1f}次/分钟\n"
         content += f"- 卡路里消耗：{calories:.1f}千卡\n"
         content += f"- 活动链接：https://www.strava.com/activities/{activity.id}\n"
-        
-        # 添加公里分割数据描述
-        if splits and len(splits) > 0:
-            content += "\n## 公里分割\n\n"
-            content += "| 公里 | 用时 | 配速 | 心率 | 海拔变化 |\n"
-            content += "|------|------|------|------|------|\n"
-            
-            for split in splits:
-                split_time = str(timedelta(seconds=int(split['moving_time'])))
-                pace_min = int(split['pace'])
-                pace_sec = int((split['pace'] % 1) * 60)
-                pace_str = f"{pace_min}:{pace_sec:02d}"
-                
-                content += f"| {split['split_number']} | {split_time} | {pace_str}/km | {int(split['average_heartrate'])} | {split['elevation_difference']:.1f}m |\n"
-            
-            content += "\n"
         
         # 添加分段数据描述
         if segments and len(segments) > 0:
@@ -363,50 +353,28 @@ def create_markdown(activity, segments=None, stream_data=None, splits=None):
                 
                 content += "\n"
         
-        return frontmatter + content
+        return frontmatter_str + content
     except Exception as e:
         print(f'处理活动数据时出错: {str(e)}')
         raise
 
 def main():
-    parser = argparse.ArgumentParser(description='从Strava获取指定日期范围内的跑步数据')
+    parser = argparse.ArgumentParser(description='从Strava获取跑步数据，包括分段数据')
     parser.add_argument('--client-id', required=True, help='Strava API的client ID')
     parser.add_argument('--client-secret', required=True, help='Strava API的client secret')
     parser.add_argument('--refresh-token', required=True, help='Strava API的refresh token')
-    parser.add_argument('--start-date', required=True, help='开始日期 (YYYY-MM-DD格式)')
-    parser.add_argument('--end-date', required=True, help='结束日期 (YYYY-MM-DD格式)')
-    parser.add_argument('--no-segments', action='store_true', help='不获取分段数据')
-    parser.add_argument('--no-splits', action='store_true', help='不获取公里分割数据')
+    parser.add_argument('--fetch-all', action='store_true', help='是否获取所有历史数据')
+    parser.add_argument('--include-segments', action='store_true', help='是否包含分段数据')
     parser.add_argument('--include-streams', action='store_true', help='是否包含流数据（心率、配速、海拔）')
     
     args = parser.parse_args()
     
     try:
-        # 解析日期字符串
-        try:
-            start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
-            end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
-            
-            # 确保结束日期不超过当前日期
-            current_date = datetime.now()
-            if end_date > current_date:
-                end_date = current_date
-                print(f'结束日期已调整为当前日期: {end_date.strftime("%Y-%m-%d")}')
-            
-            # 确保开始日期不晚于结束日期
-            if start_date > end_date:
-                raise ValueError('开始日期不能晚于结束日期')
-                
-        except ValueError as e:
-            print(f'日期格式错误: {str(e)}')
-            sys.exit(1)
-        
         activities, new_refresh_token, access_token = fetch_strava_activities(
             args.client_id,
             args.client_secret,
             args.refresh_token,
-            start_date,
-            end_date
+            args.fetch_all
         )
         
         # 创建runs目录
@@ -432,7 +400,7 @@ def main():
             segments = None
             stream_data = None
             
-            if not args.no_segments:
+            if args.include_segments:
                 try:
                     # 获取活动详情，包括分段数据
                     activity_detail = get_activity_details(client, activity.id)
@@ -451,21 +419,9 @@ def main():
                 except Exception as e:
                     print(f'获取活动 {activity.id} 流数据失败: {str(e)}')
             
-            # 获取公里分割数据
-            splits = None
-            if not args.no_splits:
-                try:
-                    # 获取详细的活动数据，包括分割信息
-                    detailed_activity = get_activity_splits(client, activity.id)
-                    splits = process_splits(detailed_activity)
-                    if splits:
-                        print(f'已获取活动 {activity.id} 的公里分割数据，共 {len(splits)} 个分割')
-                except Exception as e:
-                    print(f'获取活动 {activity.id} 公里分割数据失败: {str(e)}')
-            
             # 生成markdown内容并保存
             try:
-                content = create_markdown(activity, segments, stream_data, splits)
+                content = create_markdown(activity, segments, stream_data)
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(content)
                 print(f'已保存活动数据：{file_name}')

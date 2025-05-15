@@ -102,39 +102,19 @@ def fetch_strava_activities(client_id, client_secret, refresh_token, fetch_all=F
         print(f'认证失败: {str(e)}')
         raise
     
-    # 检查是否存在跑步数据文件
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(script_dir)
-    runs_dir = os.path.join(project_root, 'content', 'runs')
-    has_existing_data = os.path.exists(runs_dir) and len(os.listdir(runs_dir)) > 0
-    
-    # 确定获取数据的起始时间
-    # 如果没有现有数据，即使没有传入fetch_all参数也获取所有历史数据
-    after_time = None if (fetch_all or not has_existing_data) else get_latest_activity_time(runs_dir)
-    if after_time:
-        print(f'从{after_time.isoformat()}开始获取新数据')
-    else:
-        print('获取所有历史数据')
-    
     for attempt in range(max_retries):
         try:
-            all_activities = []
-            # 使用时间窗口来获取活动数据
-            current_time = datetime.now()
-            if after_time:
-                start_time = after_time
-            else:
-                # 如果没有起始时间，从1年前开始获取
-                start_time = current_time - relativedelta(years=1)
+            # 获取最新活动时间
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(script_dir)
+            runs_dir = os.path.join(project_root, 'content', 'runs')
             
-            while start_time < current_time:
-                # 设置30天的时间窗口
-                end_time = min(start_time + timedelta(days=30), current_time)
-                activities = list(client.get_activities(after=start_time, before=end_time))
-                if not activities:
-                    if not after_time:  # 如果是获取所有历史数据，继续往前查找
-                        start_time = start_time - relativedelta(years=1)
-                        if start_time < current_time - relativedelta(years=10):  # 最多获取10年的数据
+            if fetch_all:
+                print('获取所有历史数据')
+                # 获取所有活动
+                all_activities = list(client.get_activities())
+            else:
+                latest_time = get_latest_activity_time(runs_dir)
                             break
                         continue
                     else:  # 如果是增量更新，没有新数据就退出
@@ -151,7 +131,157 @@ def fetch_strava_activities(client_id, client_secret, refresh_token, fetch_all=F
             print(f'第{attempt + 1}次获取数据失败，等待重试...')
             time.sleep(5)
 
-def create_markdown(activity):
+def get_activity_details(client, activity_id, max_retries=3):
+    """获取活动的详细信息，包括分段数据"""
+    for attempt in range(max_retries):
+        try:
+            # 获取活动详情，包括分段数据
+            activity_detail = client.get_activity(activity_id, include_all_efforts=True)
+            return activity_detail
+        except Exception as e:
+            if attempt == max_retries - 1:
+                print(f'获取活动 {activity_id} 详情失败: {str(e)}')
+                raise e
+            print(f'第{attempt + 1}次获取活动详情失败，等待重试...')
+            time.sleep(5)
+
+def get_activity_streams(client, activity_id, max_retries=3):
+    """获取活动的流数据，包括心率、配速和海拔数据"""
+    for attempt in range(max_retries):
+        try:
+            # 获取活动流数据
+            streams = client.get_activity_streams(
+                activity_id, 
+                types=['time', 'distance', 'heartrate', 'altitude', 'velocity_smooth', 'cadence'],
+                resolution='medium'
+            )
+            return streams
+        except Exception as e:
+            if attempt == max_retries - 1:
+                print(f'获取活动 {activity_id} 流数据失败: {str(e)}')
+                return None  # 返回None而不是抛出异常，因为流数据不是必需的
+            print(f'第{attempt + 1}次获取活动流数据失败，等待重试...')
+            time.sleep(5)
+
+def process_segment_efforts(segment_efforts):
+    """处理分段数据，提取关键信息"""
+    if not segment_efforts:
+        return []
+    
+    processed_segments = []
+    for effort in segment_efforts:
+        segment = effort.segment
+        
+        # 提取分段信息
+        segment_data = {
+            'name': effort.name,
+            'distance': float(effort.distance),
+            'elapsed_time': effort.elapsed_time.total_seconds() if hasattr(effort.elapsed_time, 'total_seconds') else float(effort.elapsed_time),
+            'moving_time': effort.moving_time.total_seconds() if hasattr(effort.moving_time, 'total_seconds') else float(effort.moving_time),
+            'average_heartrate': float(getattr(effort, 'average_heartrate', 0) or 0),
+            'max_heartrate': float(getattr(effort, 'max_heartrate', 0) or 0),
+            'average_grade': float(getattr(segment, 'average_grade', 0) or 0),
+            'maximum_grade': float(getattr(segment, 'maximum_grade', 0) or 0),
+            'elevation_difference': float(getattr(segment, 'elevation_high', 0) or 0) - float(getattr(segment, 'elevation_low', 0) or 0)
+        }
+        
+        processed_segments.append(segment_data)
+    
+    return processed_segments
+
+def process_stream_data(streams):
+    """处理流数据，生成图表数据"""
+    if not streams:
+        return {
+            'heartrate_data': [],
+            'pace_data': [],
+            'elevation_data': []
+        }
+    
+    heartrate_data = []
+    pace_data = []
+    elevation_data = []
+    
+    # 处理心率数据
+    if 'heartrate' in streams and 'time' in streams:
+        times = streams['time'].data
+        heartrates = streams['heartrate'].data
+        
+        for i in range(0, len(times), 10):  # 每10个数据点取一个，减少数据量
+            heartrate_data.append({
+                'x': times[i],  # 时间（秒）
+                'y': heartrates[i]  # 心率
+            })
+    
+    # 处理配速数据（从速度计算）
+    if 'velocity_smooth' in streams and 'time' in streams:
+        times = streams['time'].data
+        velocities = streams['velocity_smooth'].data
+        
+        for i in range(0, len(times), 10):  # 每10个数据点取一个
+            if velocities[i] > 0:
+                # 计算配速（分钟/公里）
+                pace_min_per_km = 16.6667 / velocities[i]  # 1000 / 60 / velocity
+                
+                pace_data.append({
+                    'x': times[i],  # 时间（秒）
+                    'y': pace_min_per_km  # 配速（分钟/公里）
+                })
+    
+    # 处理海拔数据
+    if 'altitude' in streams and 'time' in streams:
+        times = streams['time'].data
+        altitudes = streams['altitude'].data
+        
+        for i in range(0, len(times), 10):  # 每10个数据点取一个
+            elevation_data.append({
+                'x': times[i],  # 时间（秒）
+                'y': altitudes[i]  # 海拔（米）
+            })
+    
+    return {
+        'heartrate_data': heartrate_data,
+        'pace_data': pace_data,
+        'elevation_data': elevation_data
+    }
+
+def get_activity_splits(client, activity_id):
+    """获取活动的公里分割数据"""
+    # 获取完整的活动详情，包括分割数据
+    activity_detail = client.get_activity(activity_id=activity_id, include_all_efforts=True)
+    return activity_detail
+
+def process_splits(activity):
+    """处理公里分割数据"""
+    splits = []
+    
+    # 获取公里分割数据
+    if hasattr(activity, 'splits_metric') and activity.splits_metric:
+        for i, split in enumerate(activity.splits_metric):
+            # 处理elapsed_time和moving_time，可能是timedelta对象
+            elapsed_time = getattr(split, 'elapsed_time', 0) or 0
+            if hasattr(elapsed_time, 'total_seconds'):
+                elapsed_time = elapsed_time.total_seconds()
+                
+            moving_time = getattr(split, 'moving_time', 0) or 0
+            if hasattr(moving_time, 'total_seconds'):
+                moving_time = moving_time.total_seconds()
+            
+            split_data = {
+                'distance': float(getattr(split, 'distance', 0) or 0),
+                'elapsed_time': float(elapsed_time),
+                'moving_time': float(moving_time),
+                'average_speed': float(getattr(split, 'average_speed', 0) or 0),
+                'pace': 16.6667 / float(getattr(split, 'average_speed', 0) or 1) if float(getattr(split, 'average_speed', 0) or 0) > 0 else 0,
+                'average_heartrate': float(getattr(split, 'average_heartrate', 0) or 0),
+                'elevation_difference': float(getattr(split, 'elevation_difference', 0) or 0),
+                'split_number': i + 1
+            }
+            splits.append(split_data)
+    
+    return splits
+
+def create_markdown(activity, segments=None, stream_data=None, splits=None):
     try:
         start_time = activity.start_date_local
         if not start_time:
@@ -183,32 +313,93 @@ def create_markdown(activity):
         max_pace_min = int(max_pace)
         max_pace_sec = int((max_pace % 1) * 60)
 
-        return f'''---
-date: {start_time.strftime('%Y-%m-%d')}
-distance: {distance:.2f}
-duration: {moving_time}
-elevation: {elevation}
-avg_speed: {avg_speed:.2f}
-max_speed: {max_speed:.2f}
-avg_pace: {avg_pace:.2f}
-max_pace: {max_pace:.2f}
-avg_heartrate: {avg_heartrate:.1f}
-max_heartrate: {max_heartrate:.1f}
-calories: {calories:.1f}
----
-
-# {start_time.strftime('%Y年%m月%d日')} 跑步数据
-
-- 距离：{distance/1000:.2f}公里
-- 时长：{time_str}
-- 海拔：{elevation}米
-- 平均配速：{avg_pace_min}:{avg_pace_sec:02d}/公里
-- 最快配速：{max_pace_min}:{max_pace_sec:02d}/公里
-- 平均心率：{avg_heartrate:.1f}次/分钟
-- 最大心率：{max_heartrate:.1f}次/分钟
-- 卡路里消耗：{calories:.1f}千卡
-- 活动链接：https://www.strava.com/activities/{activity.id}
-'''
+        # 构建frontmatter
+        frontmatter_lines = [
+            f"date: {start_time.strftime('%Y-%m-%d')}",
+            f"distance: {distance:.2f}",
+            f"duration: {moving_time}",
+            f"elevation: {elevation}",
+            f"avg_speed: {avg_speed:.2f}",
+            f"max_speed: {max_speed:.2f}",
+            f"avg_pace: {avg_pace:.2f}",
+            f"max_pace: {max_pace:.2f}",
+            f"avg_heartrate: {avg_heartrate:.1f}",
+            f"max_heartrate: {max_heartrate:.1f}",
+            f"calories: {calories:.1f}"
+        ]
+        
+        # 添加分段数据
+        if segments:
+            frontmatter_lines.append(f"segments: {json.dumps(segments)}")
+            
+        # 添加公里分割数据
+        if splits:
+            frontmatter_lines.append(f"splits: {json.dumps(splits)}")
+        
+        # 添加流数据
+        if stream_data:
+            if stream_data.get('heartrate_data'):
+                frontmatter_lines.append(f"heartrate_data: {json.dumps(stream_data['heartrate_data'])}")
+            if stream_data.get('pace_data'):
+                frontmatter_lines.append(f"pace_data: {json.dumps(stream_data['pace_data'])}")
+            if stream_data.get('elevation_data'):
+                frontmatter_lines.append(f"elevation_data: {json.dumps(stream_data['elevation_data'])}")
+        
+        # 构建frontmatter部分
+        frontmatter = "---\n" + "\n".join(frontmatter_lines) + "\n---\n\n"
+        
+        # 构建Markdown内容
+        content = f"# {start_time.strftime('%Y年%m月%d日')} 跑步数据\n\n"
+        content += f"- 距离：{distance/1000:.2f}公里\n"
+        content += f"- 时长：{time_str}\n"
+        content += f"- 海拔：{elevation}米\n"
+        content += f"- 平均配速：{avg_pace_min}:{avg_pace_sec:02d}/公里\n"
+        content += f"- 最快配速：{max_pace_min}:{max_pace_sec:02d}/公里\n"
+        content += f"- 平均心率：{avg_heartrate:.1f}次/分钟\n"
+        content += f"- 最大心率：{max_heartrate:.1f}次/分钟\n"
+        content += f"- 卡路里消耗：{calories:.1f}千卡\n"
+        content += f"- 活动链接：https://www.strava.com/activities/{activity.id}\n"
+        
+        # 添加公里分割数据描述
+        if splits and len(splits) > 0:
+            content += "\n## 公里分割\n\n"
+            content += "| 公里 | 用时 | 配速 | 心率 | 海拔变化 |\n"
+            content += "|------|------|------|------|------|\n"
+            
+            for split in splits:
+                split_time = str(timedelta(seconds=int(split['moving_time'])))
+                pace_min = int(split['pace'])
+                pace_sec = int((split['pace'] % 1) * 60)
+                pace_str = f"{pace_min}:{pace_sec:02d}"
+                
+                content += f"| {split['split_number']} | {split_time} | {pace_str}/km | {int(split['average_heartrate'])} | {split['elevation_difference']:.1f}m |\n"
+            
+            content += "\n"
+        
+        # 添加分段数据描述
+        if segments and len(segments) > 0:
+            content += "\n## 分段数据\n\n"
+            for i, segment in enumerate(segments):
+                content += f"### {i+1}. {segment['name']}\n\n"
+                content += f"- 距离：{segment['distance']/1000:.2f}公里\n"
+                segment_time = str(timedelta(seconds=int(segment['elapsed_time'])))
+                content += f"- 用时：{segment_time}\n"
+                
+                if segment['average_grade']:
+                    content += f"- 平均坡度：{segment['average_grade']:.1f}%\n"
+                
+                if segment['maximum_grade']:
+                    content += f"- 最大坡度：{segment['maximum_grade']:.1f}%\n"
+                
+                if segment['average_heartrate']:
+                    content += f"- 平均心率：{segment['average_heartrate']:.1f}次/分钟\n"
+                
+                if segment['max_heartrate']:
+                    content += f"- 最大心率：{segment['max_heartrate']:.1f}次/分钟\n"
+                
+                content += "\n"
+        
+        return frontmatter + content
     except Exception as e:
         print(f'处理活动数据时出错: {str(e)}')
         raise
@@ -219,6 +410,9 @@ def main():
     parser.add_argument('--client-secret', required=True, help='Strava API的client secret')
     parser.add_argument('--refresh-token', required=True, help='Strava API的refresh token')
     parser.add_argument('--fetch-all', action='store_true', help='是否获取所有历史数据')
+    parser.add_argument('--no-segments', action='store_true', help='不获取分段数据')
+    parser.add_argument('--no-splits', action='store_true', help='不获取公里分割数据')
+    parser.add_argument('--include-streams', action='store_true', help='是否包含流数据（心率、配速、海拔）')
     
     args = parser.parse_args()
     
@@ -236,6 +430,9 @@ def main():
         runs_dir = os.path.join(project_root, 'content', 'runs')
         os.makedirs(runs_dir, exist_ok=True)
         
+        # 创建客户端
+        client = Client(access_token=access_token)
+        
         # 保存活动数据
         for activity in activities:
             if activity.type != 'Run':
@@ -246,16 +443,50 @@ def main():
             file_name = f"{activity.id}_{start_time.strftime('%Y-%m-%dT%H-%M-%S')}.md"
             file_path = os.path.join(runs_dir, file_name)
             
+            # 获取详细数据
+            segments = None
+            stream_data = None
+            
+            if not args.no_segments:
+                try:
+                    # 获取活动详情，包括分段数据
+                    activity_detail = get_activity_details(client, activity.id)
+                    segments = process_segment_efforts(activity_detail.segment_efforts)
+                    print(f'已获取活动 {activity.id} 的分段数据，共 {len(segments)} 个分段')
+                except Exception as e:
+                    print(f'获取活动 {activity.id} 分段数据失败: {str(e)}')
+            
+            if args.include_streams:
+                try:
+                    # 获取活动流数据
+                    streams = get_activity_streams(client, activity.id)
+                    if streams:
+                        stream_data = process_stream_data(streams)
+                        print(f'已获取活动 {activity.id} 的流数据')
+                except Exception as e:
+                    print(f'获取活动 {activity.id} 流数据失败: {str(e)}')
+            
+            # 获取公里分割数据
+            splits = None
+            if not args.no_splits:
+                try:
+                    # 获取详细的活动数据，包括分割信息
+                    detailed_activity = get_activity_splits(client, activity.id)
+                    splits = process_splits(detailed_activity)
+                    if splits:
+                        print(f'已获取活动 {activity.id} 的公里分割数据，共 {len(splits)} 个分割')
+                except Exception as e:
+                    print(f'获取活动 {activity.id} 公里分割数据失败: {str(e)}')
+            
             # 生成markdown内容并保存
             try:
-                content = create_markdown(activity)
+                content = create_markdown(activity, segments, stream_data, splits)
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(content)
                 print(f'已保存活动数据：{file_name}')
             except Exception as e:
                 print(f'保存活动 {activity.id} 失败: {str(e)}')
     
-        
         print('\n数据同步完成！')
         
     except Exception as e:

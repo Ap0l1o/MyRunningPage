@@ -6,7 +6,7 @@ import WeeklyChart from '../components/WeeklyChart'
 import MonthlyHeatmap from '../components/MonthlyHeatmap'
 import YearlyChart from '../components/YearlyChart'
 import Profile from '../components/Profile'
-import DetailedData from '../components/DetailedData'
+import AllRunsData from '../components/AllRunsData'
 import StatsSummary from '../components/StatsSummary'
 import '../styles/mobile.css'
 
@@ -241,7 +241,7 @@ const IndexPage = ({ data }) => {
 
       <StatsSummary runs={runs} isMobile={isMobile} />
 
-      <DetailedData runs={runs} />
+      <AllRunsData runs={runs} />
     </main>
   )
 }
