@@ -173,9 +173,13 @@ const RunDetail = ({ runData, segments, splits: propsSplits }) => {
   }
 
   const formatPace = (pace) => {
-    const paceMin = Math.floor(pace)
-    const paceSec = Math.round((pace % 1) * 60)
-    return `${paceMin}'${paceSec.toString().padStart(2, '0')}`
+    // 检查pace是否为有效数字
+    if (pace === undefined || pace === null || isNaN(pace)) {
+      return '-';
+    }
+    const paceMin = Math.floor(pace);
+    const paceSec = Math.round((pace % 1) * 60);
+    return `${paceMin}'${paceSec.toString().padStart(2, '0')}`;
   }
 
   const formatDuration = (seconds) => {
@@ -414,14 +418,18 @@ const RunDetail = ({ runData, segments, splits: propsSplits }) => {
                 {segments.segment_efforts.map((segment, index) => (
                   <tr key={index}>
                     <td style={stravaStyles.tableCell}>
-                      <a 
-                        href={`https://www.strava.com/segments/${segment.segment.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={stravaStyles.link}
-                      >
-                        {segment.name}
-                      </a>
+                      {segment.segment ? (
+                        <a 
+                          href={`https://www.strava.com/segments/${segment.segment.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={stravaStyles.link}
+                        >
+                          {segment.name}
+                        </a>
+                      ) : (
+                        <span>{segment.name || `片段 ${index + 1}`}</span>
+                      )}
                     </td>
                     <td style={stravaStyles.tableCellRight}>
                       {(segment.distance / 1000).toFixed(2)}
@@ -430,7 +438,9 @@ const RunDetail = ({ runData, segments, splits: propsSplits }) => {
                       {formatDuration(segment.elapsed_time)}
                     </td>
                     <td style={stravaStyles.tableCellRight}>
-                      {formatPace(segment.avg_pace)}/km
+                      {segment.elapsed_time && segment.distance ? 
+                        `${formatPace(segment.elapsed_time / 60 / (segment.distance / 1000))}/km` : 
+                        '-'}
                     </td>
                     <td style={stravaStyles.tableCellRight}>
                       {Math.round(segment.avg_heartrate || 0)}

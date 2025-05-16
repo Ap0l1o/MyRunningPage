@@ -193,29 +193,34 @@ const AllRunsData = ({ runs }) => {
         marginTop: isMobile ? '15px' : '20px', 
         display: 'flex', 
         justifyContent: 'center',
+        alignItems: 'center',
         flexWrap: 'wrap'
       }}>
-        {Array(Math.ceil(sortedRunData.length / itemsPerPage)).fill(null).map((_, index) => (
-          <button 
-            onClick={() => setCurrentPage(index + 1)}
-            style={{
-              margin: isMobile ? '0 3px 6px' : '0 5px',
-              padding: isMobile ? '4px 8px' : '5px 10px',
-              backgroundColor: currentPage === index + 1 ? '#fc4c02' : '#f0f0f0',
-              color: currentPage === index + 1 ? 'white' : '#333',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: isMobile ? '14px' : '16px',
-              minWidth: isMobile ? '30px' : '36px'
-            }}
-            key={index}
-          >
-            {index + 1}
-          </button>
-        ))}
+        <button
+          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+          disabled={currentPage <= 1}
+          style={{ 
+            padding: isMobile ? '4px 8px' : '8px 16px', 
+            margin: '0 5px', 
+            background: currentPage <= 1 ? '#e0e0e0' : '#fc4c02', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '4px',
+            cursor: currentPage <= 1 ? 'not-allowed' : 'pointer',
+            fontSize: isMobile ? '14px' : '16px'
+          }}
+        >
+          上一页
+        </button>
         
-        <span style={{ padding: '8px 16px' }}>
+        <span style={{ 
+          padding: isMobile ? '6px 10px' : '8px 16px',
+          margin: '0 10px',
+          backgroundColor: '#f5f5f5',
+          borderRadius: '4px',
+          fontSize: isMobile ? '14px' : '16px',
+          fontWeight: '500'
+        }}>
           第 {currentPage} 页 / 共 {Math.ceil(sortedRunData.length / itemsPerPage)} 页
         </span>
         
