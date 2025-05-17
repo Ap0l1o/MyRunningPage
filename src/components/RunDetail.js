@@ -320,7 +320,7 @@ const RunDetail = ({ runData, segments, splits: propsSplits }) => {
 
       {/* 第二栏: 公里分割数据 */}
       <div style={stravaStyles.section}>
-        <h3 style={stravaStyles.sectionTitle}>公里分割数据</h3>
+        <h3 style={stravaStyles.sectionTitle}>公里数据</h3>
         
         {splits && Array.isArray(splits) && splits.length > 0 ? (
           <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
