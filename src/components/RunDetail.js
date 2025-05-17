@@ -173,19 +173,9 @@ const RunDetail = ({ runData, segments, splits: propsSplits }) => {
   }
 
   const formatPace = (pace) => {
-<<<<<<< HEAD
-    // 检查pace是否为有效数字
-    if (pace === undefined || pace === null || isNaN(pace)) {
-      return '-';
-    }
-    const paceMin = Math.floor(pace);
-    const paceSec = Math.round((pace % 1) * 60);
-    return `${paceMin}'${paceSec.toString().padStart(2, '0')}`;
-=======
     const paceMin = Math.floor(pace)
     const paceSec = Math.round((pace % 1) * 60)
     return `${paceMin}'${paceSec.toString().padStart(2, '0')}`
->>>>>>> main
   }
 
   const formatDuration = (seconds) => {
