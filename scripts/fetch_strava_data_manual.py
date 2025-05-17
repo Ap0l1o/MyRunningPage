@@ -480,7 +480,7 @@ def main():
                     
                     # 如果有流数据，使用流数据计算分圈的心率
                     if stream_data and 'heartrate_data' in stream_data and stream_data['heartrate_data']:
-                        print(f'使用流数据计算分圈的心率')
+                        # 使用流数据计算分圈的心率
                         # 将流数据转换为process_laps_with_streams函数需要的格式
                         streams = {}
                         if 'heartrate_data' in stream_data and stream_data['heartrate_data']:

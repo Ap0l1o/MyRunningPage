@@ -13,19 +13,11 @@ def process_laps_with_streams(activity, streams=None):
     
     # 如果没有流数据，则使用默认方法处理
     if not streams or 'heartrate' not in streams or 'time' not in streams:
-        print("\n没有流数据或流数据不完整，使用默认方法处理分圈数据")
         return process_laps(activity)
     
     # 提取心率和时间数据
     times = streams['time'].data
     heartrates = streams['heartrate'].data
-    
-    print(f"\n找到流数据: {len(times)}个时间点, {len(heartrates)}个心率数据点")
-    
-    # 打印部分流数据例子
-    print("\n流数据示例:")
-    for i in range(min(5, len(times))):
-        print(f"  时间: {times[i]}秒, 心率: {heartrates[i]}次/分钟")
     
     # 获取分圈数据
     if hasattr(activity, 'laps') and activity.laps:
@@ -70,7 +62,7 @@ def process_laps_with_streams(activity, streams=None):
                                 end_index = j
                                 break
                     except Exception as e:
-                        print(f"计算分圈 {i+1} 的时间偏移失败: {str(e)}")
+                        pass
             
             # 计算分圈的心率数据
             avg_hr = 0
@@ -87,8 +79,6 @@ def process_laps_with_streams(activity, streams=None):
                     start_offset = (lap_start_time - activity_start_time).total_seconds()
                     end_offset = start_offset + elapsed_time
                     
-                    print(f"分圈 {i+1}: 开始时间偏移 = {start_offset:.1f}秒, 结束时间偏移 = {end_offset:.1f}秒")
-                    
                     # 从流数据中提取对应时间范围内的心率数据
                     for j in range(len(times)):
                         if times[j] >= start_offset and times[j] <= end_offset:
@@ -97,11 +87,8 @@ def process_laps_with_streams(activity, streams=None):
                     if hr_data_points:
                         avg_hr = sum(hr_data_points) / len(hr_data_points)
                         max_hr = max(hr_data_points)
-                        print(f"分圈 {i+1}: 找到 {len(hr_data_points)} 个心率数据点，平均心率: {avg_hr:.1f}, 最大心率: {max_hr:.1f}")
-                    else:
-                        print(f"分圈 {i+1}: 在流数据中未找到对应时间范围的心率数据")
                 except Exception as e:
-                    print(f"分圈 {i+1}: 计算心率数据时出错: {str(e)}")
+                    pass
             
             # 如果没有从流数据中获取到心率，尝试从分圈对象或活动对象中获取
             if avg_hr == 0:
@@ -112,23 +99,23 @@ def process_laps_with_streams(activity, streams=None):
                 for field in possible_avg_hr_fields:
                     if hasattr(lap, field) and getattr(lap, field) is not None:
                         avg_hr = float(getattr(lap, field))
-                        print(f"分圈 {i+1}: 使用分圈对象的平均心率: {avg_hr:.1f}")
+                        pass
                         break
                         
                 for field in possible_max_hr_fields:
                     if hasattr(lap, field) and getattr(lap, field) is not None:
                         max_hr = float(getattr(lap, field))
-                        print(f"分圈 {i+1}: 使用分圈对象的最大心率: {max_hr:.1f}")
+                        pass
                         break
                 
                 # 如果还是没有找到心率数据，尝试从活动对象获取
                 if avg_hr == 0 and hasattr(activity, 'average_heartrate') and activity.average_heartrate:
                     avg_hr = float(activity.average_heartrate)
-                    print(f"分圈 {i+1}: 使用活动的平均心率: {avg_hr:.1f}")
+                    pass
                     
                 if max_hr == 0 and hasattr(activity, 'max_heartrate') and activity.max_heartrate:
                     max_hr = float(activity.max_heartrate)
-                    print(f"分圈 {i+1}: 使用活动的最大心率: {max_hr:.1f}")
+                    pass
             
             lap_data = {
                 'lap_number': i + 1,
@@ -145,7 +132,7 @@ def process_laps_with_streams(activity, streams=None):
             }
             laps.append(lap_data)
     else:
-        print("\n活动对象中没有分圈数据，使用默认方法处理")
+        # 活动对象中没有分圈数据，使用默认方法处理
         return process_laps(activity)
     
     return laps
@@ -156,7 +143,6 @@ def process_laps(activity):
     
     # 获取分圈数据
     if hasattr(activity, 'laps') and activity.laps:
-        print(f"\n找到 {len(activity.laps)} 个分圈")
         for i, lap in enumerate(activity.laps):
             # 处理elapsed_time和moving_time，可能是timedelta对象
             elapsed_time = getattr(lap, 'elapsed_time', 0) or 0
@@ -211,9 +197,8 @@ def process_laps(activity):
             }
             laps.append(lap_data)
     else:
-        print("\n活动对象中没有分圈数据")
+        # 活动对象中没有分圈数据
         if hasattr(activity, 'splits_metric') and activity.splits_metric:
-            print(f"\n活动有 {len(activity.splits_metric)} 个公里分割数据，尝试使用这些数据作为分圈数据")
             # 如果没有分圈数据，尝试使用公里分割数据
             for i, split in enumerate(activity.splits_metric):
                 # 处理elapsed_time和moving_time

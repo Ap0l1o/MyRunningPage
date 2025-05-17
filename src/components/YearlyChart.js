@@ -53,6 +53,10 @@ const YearlyChart = ({ data, runs }) => {
                 filter: 'drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.1))',
               }
             }}
+            animate={{
+              duration: 500,
+              onLoad: { duration: 500 }
+            }}
             labelComponent={
               <VictoryTooltip
                 style={{ fontSize: 12 }}
@@ -82,17 +86,7 @@ const YearlyChart = ({ data, runs }) => {
               grid: { stroke: '#f7f7f7', strokeWidth: 1, strokeDasharray: '4, 4' },
               axis: { stroke: '#f0f0f0', strokeWidth: 1 }
             }}
-            domain={[0, undefined]}
-            tickValues={data => {
-              // 检查是否有数据
-              const maxValue = Math.max(...data.map(d => d.y));
-              if (maxValue <= 0) {
-                // 如果没有数据，使用默认刻度值
-                return [0, 10, 20, 30, 40, 50];
-              }
-              // 有数据时根据最大值计算合适的刻度
-              return undefined;
-            }}
+            tickFormat={(t) => Math.round(t * 10) / 10}
           />
         </VictoryChart>
       </div>
