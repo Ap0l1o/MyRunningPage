@@ -85,6 +85,19 @@ export const pageQuery = graphql`
           elevation_difference
           split_number
         }
+        laps {
+          lap_number
+          name
+          distance
+          elapsed_time
+          moving_time
+          average_speed
+          pace
+          average_heartrate
+          max_heartrate
+          start_date
+          elevation_difference
+        }
         segments {
           name
           distance

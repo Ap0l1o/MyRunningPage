@@ -185,7 +185,7 @@ const MonthlyHeatmap = ({ startDate, endDate, calendarData, maxDistance }) => {
   
   return (
     <div style={{ flex: '1 1 100%', minWidth: '280px', maxWidth: '100%', background: 'white', padding: '15px', borderRadius: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: '300px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      <h3 style={{ margin: '0 0 15px 0', color: '#333', fontSize: '16px' }}>月度概览</h3>
+      <h3 style={{ margin: '0 0 15px 0', color: '#333', fontSize: '16px' }}>本月概览</h3>
       <div className="calendar-container" style={{ fontSize: '12px' }}>
         <div className="weekday-header">
           <div className="weekday-label">周一</div>

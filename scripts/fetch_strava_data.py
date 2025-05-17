@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import glob
 import re
 import sys
+from process_laps_with_streams import process_laps, process_laps_with_streams
 
 
 def get_latest_activity_time(runs_dir):
@@ -115,6 +116,7 @@ def fetch_strava_activities(client_id, client_secret, refresh_token, fetch_all=F
                 all_activities = list(client.get_activities())
             else:
                 latest_time = get_latest_activity_time(runs_dir)
+<<<<<<< HEAD
                             break
                         continue
                     else:  # 如果是增量更新，没有新数据就退出
@@ -123,6 +125,12 @@ def fetch_strava_activities(client_id, client_secret, refresh_token, fetch_all=F
                 all_activities.extend(activities)
                 print(f'已获取{start_time.date()}至{end_time.date()}的数据，共{len(all_activities)}条记录')
                 start_time = end_time
+=======
+                # 获取最新活动
+                print(f'获取最新活动数据')
+                all_activities = list(client.get_activities(after=latest_time))
+                print(f'已获取{len(all_activities)}条新记录')
+>>>>>>> main
             
             return all_activities, new_refresh_token, access_token
         except Exception as e:
@@ -281,7 +289,11 @@ def process_splits(activity):
     
     return splits
 
+<<<<<<< HEAD
 def create_markdown(activity, segments=None, stream_data=None, splits=None):
+=======
+def create_markdown(activity, segments=None, stream_data=None, splits=None, laps=None):
+>>>>>>> main
     try:
         start_time = activity.start_date_local
         if not start_time:
@@ -335,6 +347,13 @@ def create_markdown(activity, segments=None, stream_data=None, splits=None):
         # 添加公里分割数据
         if splits:
             frontmatter_lines.append(f"splits: {json.dumps(splits)}")
+<<<<<<< HEAD
+=======
+            
+        # 添加分圈数据
+        if laps:
+            frontmatter_lines.append(f"laps: {json.dumps(laps)}")
+>>>>>>> main
         
         # 添加流数据
         if stream_data:
@@ -412,7 +431,12 @@ def main():
     parser.add_argument('--fetch-all', action='store_true', help='是否获取所有历史数据')
     parser.add_argument('--no-segments', action='store_true', help='不获取分段数据')
     parser.add_argument('--no-splits', action='store_true', help='不获取公里分割数据')
+<<<<<<< HEAD
     parser.add_argument('--include-streams', action='store_true', help='是否包含流数据（心率、配速、海拔）')
+=======
+    parser.add_argument('--no-laps', action='store_true', help='不获取分圈数据')
+    parser.add_argument('--no-streams', action='store_true', help='不获取流数据（心率、配速、海拔）')
+>>>>>>> main
     
     args = parser.parse_args()
     
@@ -456,7 +480,7 @@ def main():
                 except Exception as e:
                     print(f'获取活动 {activity.id} 分段数据失败: {str(e)}')
             
-            if args.include_streams:
+            if not args.no_streams:
                 try:
                     # 获取活动流数据
                     streams = get_activity_streams(client, activity.id)
@@ -468,6 +492,7 @@ def main():
             
             # 获取公里分割数据
             splits = None
+            detailed_activity = None
             if not args.no_splits:
                 try:
                     # 获取详细的活动数据，包括分割信息
@@ -478,9 +503,48 @@ def main():
                 except Exception as e:
                     print(f'获取活动 {activity.id} 公里分割数据失败: {str(e)}')
             
+            # 获取分圈数据
+            laps = None
+            if not args.no_laps:
+                try:
+                    # 使用正确的API调用获取分圈数据
+                    if not detailed_activity:
+                        detailed_activity = client.get_activity(activity.id, include_all_efforts=True)
+                    
+                    # 如果有流数据，使用流数据计算分圈的心率
+                    if stream_data and 'heartrate_data' in stream_data and stream_data['heartrate_data']:
+                        # 使用流数据计算分圈的心率
+                        # 将流数据转换为process_laps_with_streams函数需要的格式
+                        streams = {}
+                        if 'heartrate_data' in stream_data and stream_data['heartrate_data']:
+                            times = [point['x'] for point in stream_data['heartrate_data']]
+                            heartrates = [point['y'] for point in stream_data['heartrate_data']]
+                            
+                            # 创建流数据对象
+                            class StreamData:
+                                def __init__(self, data):
+                                    self.data = data
+                                    
+                            streams['time'] = StreamData(times)
+                            streams['heartrate'] = StreamData(heartrates)
+                            
+                            # 使用流数据处理分圈数据
+                            laps = process_laps_with_streams(detailed_activity, streams)
+                        else:
+                            # 如果没有心率流数据，使用普通方法
+                            laps = process_laps(detailed_activity)
+                    else:
+                        # 如果没有流数据，使用普通方法
+                        laps = process_laps(detailed_activity)
+                        
+                    if laps:
+                        print(f'已获取活动 {activity.id} 的分圈数据，共 {len(laps)} 个分圈')
+                except Exception as e:
+                    print(f'获取活动 {activity.id} 分圈数据失败: {str(e)}')
+            
             # 生成markdown内容并保存
             try:
-                content = create_markdown(activity, segments, stream_data, splits)
+                content = create_markdown(activity, segments, stream_data, splits, laps)
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(content)
                 print(f'已保存活动数据：{file_name}')

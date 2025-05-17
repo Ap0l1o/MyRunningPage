@@ -45,7 +45,7 @@ const WeeklyChart = ({ data }) => {
 
   return (
     <div style={{ flex: '1 1 100%', minWidth: '280px', maxWidth: '100%', background: 'white', padding: '20px', borderRadius: '14px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', height: '300px', display: 'flex', flexDirection: 'column' }}>
-      <h3 style={{ margin: '0 0 15px 0', color: '#333', fontSize: '17px', fontWeight: '600' }}>本周跑量</h3>
+      <h3 style={{ margin: '0 0 15px 0', color: '#333', fontSize: '17px', fontWeight: '600' }}>本周概览</h3>
       <div className="weekly-chart-container" style={{ flex: 1, position: 'relative', minHeight: 0, overflow: 'hidden', height: '250px', padding: '5px 0', width: '100%' }}>
         <VictoryChart
           theme={VictoryTheme.material}
@@ -68,6 +68,10 @@ const WeeklyChart = ({ data }) => {
                 fillOpacity: 0.9,
                 filter: 'drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.1))',
               }
+            }}
+            animate={{
+              duration: 500,
+              onLoad: { duration: 500 }
             }}
             labelComponent={
               <VictoryTooltip
@@ -103,6 +107,7 @@ const WeeklyChart = ({ data }) => {
               grid: { stroke: '#f7f7f7', strokeWidth: 1, strokeDasharray: '4, 4' },
               axis: { stroke: '#f0f0f0', strokeWidth: 1 }
             }}
+            tickFormat={(t) => Math.round(t * 10) / 10}
           />
         </VictoryChart>
       </div>

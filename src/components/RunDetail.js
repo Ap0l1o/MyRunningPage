@@ -173,6 +173,7 @@ const RunDetail = ({ runData, segments, splits: propsSplits }) => {
   }
 
   const formatPace = (pace) => {
+<<<<<<< HEAD
     // 检查pace是否为有效数字
     if (pace === undefined || pace === null || isNaN(pace)) {
       return '-';
@@ -180,6 +181,11 @@ const RunDetail = ({ runData, segments, splits: propsSplits }) => {
     const paceMin = Math.floor(pace);
     const paceSec = Math.round((pace % 1) * 60);
     return `${paceMin}'${paceSec.toString().padStart(2, '0')}`;
+=======
+    const paceMin = Math.floor(pace)
+    const paceSec = Math.round((pace % 1) * 60)
+    return `${paceMin}'${paceSec.toString().padStart(2, '0')}`
+>>>>>>> main
   }
 
   const formatDuration = (seconds) => {
@@ -398,10 +404,80 @@ const RunDetail = ({ runData, segments, splits: propsSplits }) => {
         )}
       </div>
 
-      {/* 第三栏: 分段数据 */}
+      {/* 分圈数据 */}
+      {runData.frontmatter.laps && runData.frontmatter.laps.length > 0 ? (
+        <div style={stravaStyles.section}>
+          <h3 style={stravaStyles.sectionTitle}>分圈数据</h3>
+          
+          <div style={{ overflowX: isMobile ? 'auto' : 'visible', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{...stravaStyles.table, fontSize: isMobile ? '14px' : '16px'}}>
+              <thead>
+                <tr>
+                  <th style={stravaStyles.tableHeader}>圈数</th>
+                  <th style={stravaStyles.tableHeaderRight}>距离 (km)</th>
+                  <th style={stravaStyles.tableHeaderRight}>用时</th>
+                  <th style={stravaStyles.tableHeaderRight}>配速</th>
+                  <th style={stravaStyles.tableHeaderRight}>平均心率</th>
+                  <th style={stravaStyles.tableHeaderRight}>最大心率</th>
+                  <th style={stravaStyles.tableHeaderRight}>爬升 (m)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {runData.frontmatter.laps.map((lap, index) => (
+                  <tr key={index}>
+                    <td style={stravaStyles.tableCell}>
+                      {lap.name || `第 ${lap.lap_number} 圈`}
+                    </td>
+                    <td style={stravaStyles.tableCellRight}>
+                      {(lap.distance / 1000).toFixed(2)}
+                    </td>
+                    <td style={stravaStyles.tableCellRight}>
+                      {formatDuration(lap.elapsed_time)}
+                    </td>
+                    <td style={stravaStyles.tableCellRight}>
+                      {lap.elapsed_time && lap.distance ? 
+                        `${formatPace(lap.elapsed_time / 60 / (lap.distance / 1000))}/km` : 
+                        '-'}
+                    </td>
+                    <td style={stravaStyles.tableCellRight}>
+                      {lap.average_heartrate ? (
+                        <span style={{ 
+                          color: lap.average_heartrate > 160 ? '#ff4d4d' : 
+                                 lap.average_heartrate > 140 ? '#ff8c00' : 
+                                 lap.average_heartrate > 120 ? '#2ecc71' : 
+                                 '#3498db'
+                        }}>
+                          {Math.round(lap.average_heartrate)}
+                        </span>
+                      ) : '-'}
+                    </td>
+                    <td style={stravaStyles.tableCellRight}>
+                      {lap.max_heartrate ? (
+                        <span style={{ 
+                          color: lap.max_heartrate > 180 ? '#ff4d4d' : 
+                                 lap.max_heartrate > 160 ? '#ff8c00' : 
+                                 lap.max_heartrate > 140 ? '#2ecc71' : 
+                                 '#3498db'
+                        }}>
+                          {Math.round(lap.max_heartrate)}
+                        </span>
+                      ) : '-'}
+                    </td>
+                    <td style={stravaStyles.tableCellRight}>
+                      {Math.round(lap.elevation_difference || 0)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+
+      {/* 第三栏: 路线数据 (原分段数据) */}
       {segments && segments.segment_efforts && segments.segment_efforts.length > 0 && (
         <div style={stravaStyles.section}>
-          <h3 style={stravaStyles.sectionTitle}>分段数据</h3>
+          <h3 style={stravaStyles.sectionTitle}>路线数据</h3>
           
           <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <table style={{...stravaStyles.table, fontSize: isMobile ? '14px' : '16px'}}>
@@ -412,13 +488,14 @@ const RunDetail = ({ runData, segments, splits: propsSplits }) => {
                   <th style={stravaStyles.tableHeaderRight}>时长</th>
                   <th style={stravaStyles.tableHeaderRight}>平均配速</th>
                   <th style={stravaStyles.tableHeaderRight}>平均心率</th>
+                  <th style={stravaStyles.tableHeaderRight}>爬升 (m)</th>
                 </tr>
               </thead>
               <tbody>
                 {segments.segment_efforts.map((segment, index) => (
                   <tr key={index}>
                     <td style={stravaStyles.tableCell}>
-                      {segment.segment ? (
+                      {segment && segment.segment ? (
                         <a 
                           href={`https://www.strava.com/segments/${segment.segment.id}`}
                           target="_blank"
@@ -428,7 +505,7 @@ const RunDetail = ({ runData, segments, splits: propsSplits }) => {
                           {segment.name}
                         </a>
                       ) : (
-                        <span>{segment.name || `片段 ${index + 1}`}</span>
+                        <span>{segment && segment.name || `片段 ${index + 1}`}</span>
                       )}
                     </td>
                     <td style={stravaStyles.tableCellRight}>
@@ -438,12 +515,15 @@ const RunDetail = ({ runData, segments, splits: propsSplits }) => {
                       {formatDuration(segment.elapsed_time)}
                     </td>
                     <td style={stravaStyles.tableCellRight}>
-                      {segment.elapsed_time && segment.distance ? 
+                      {segment && segment.elapsed_time && segment.distance ? 
                         `${formatPace(segment.elapsed_time / 60 / (segment.distance / 1000))}/km` : 
                         '-'}
                     </td>
                     <td style={stravaStyles.tableCellRight}>
-                      {Math.round(segment.avg_heartrate || 0)}
+                      {Math.round(segment.average_heartrate || 0)}
+                    </td>
+                    <td style={stravaStyles.tableCellRight}>
+                      {Math.round(segment.elevation_difference || 0)}
                     </td>
                   </tr>
                 ))}
