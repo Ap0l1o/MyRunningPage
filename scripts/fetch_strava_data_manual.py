@@ -246,11 +246,7 @@ def process_splits(activity):
     
     return splits
 
-<<<<<<< HEAD
-def create_markdown(activity, segments=None, stream_data=None, splits=None):
-=======
 def create_markdown(activity, segments=None, stream_data=None, splits=None, laps=None):
->>>>>>> main
     try:
         start_time = activity.start_date_local
         if not start_time:
@@ -301,11 +297,6 @@ def create_markdown(activity, segments=None, stream_data=None, splits=None, laps
         if segments:
             frontmatter_lines.append(f"segments: {json.dumps(segments)}")
             
-<<<<<<< HEAD
-        # 添加公里分割数据
-        if splits:
-            frontmatter_lines.append(f"splits: {json.dumps(splits)}")
-=======
         # 添加分割数据
         if splits:
             frontmatter_lines.append(f"splits: {json.dumps(splits)}")
@@ -313,7 +304,6 @@ def create_markdown(activity, segments=None, stream_data=None, splits=None, laps
         # 添加分圈数据
         if laps:
             frontmatter_lines.append(f"laps: {json.dumps(laps)}")
->>>>>>> main
         
         # 添加流数据
         if stream_data:
@@ -457,11 +447,7 @@ def main():
                 except Exception as e:
                     print(f'获取活动 {activity.id} 分段数据失败: {str(e)}')
             
-<<<<<<< HEAD
-            if args.include_streams:
-=======
             if not args.no_streams:
->>>>>>> main
                 try:
                     # 获取活动流数据
                     streams = get_activity_streams(client, activity.id)
@@ -473,10 +459,7 @@ def main():
             
             # 获取公里分割数据
             splits = None
-<<<<<<< HEAD
-=======
             detailed_activity = None
->>>>>>> main
             if not args.no_splits:
                 try:
                     # 获取详细的活动数据，包括分割信息
@@ -487,11 +470,6 @@ def main():
                 except Exception as e:
                     print(f'获取活动 {activity.id} 公里分割数据失败: {str(e)}')
             
-<<<<<<< HEAD
-            # 生成markdown内容并保存
-            try:
-                content = create_markdown(activity, segments, stream_data, splits)
-=======
             # 获取分圈数据
             laps = None
             if not args.no_laps:
@@ -534,7 +512,6 @@ def main():
             # 生成markdown内容并保存
             try:
                 content = create_markdown(activity, segments, stream_data, splits, laps)
->>>>>>> main
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(content)
                 print(f'已保存活动数据：{file_name}')
