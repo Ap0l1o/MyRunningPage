@@ -30,20 +30,20 @@ const YearlyChart = ({ data, runs }) => {
   });
   return (
     <div style={{ flex: '1 1 100%', minWidth: '280px', maxWidth: '100%', background: 'white', padding: '20px', borderRadius: '14px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', height: '300px', display: 'flex', flexDirection: 'column' }}>
-      <h3 style={{ margin: '0 0 15px 0', color: '#333', fontSize: '17px', fontWeight: '600' }}>年度统计</h3>
+      <h3 style={{ margin: '0 0 15px 0', color: '#333', fontSize: '17px', fontWeight: '600' }}>本年概览</h3>
       <div style={{ flex: 1, position: 'relative', minHeight: 0, overflow: 'hidden', height: '250px', padding: '5px 0' }}>
         <VictoryChart
           theme={VictoryTheme.material}
-          domainPadding={{ x: 30 }}
+          domainPadding={{ x: 20 }}
           height={250}
           containerComponent={<VictoryContainer responsive={false}/>}
-          padding={{ top: 30, bottom: 40, left: 30, right: 30 }}
+          padding={{ top: 30, bottom: 40, left: 30, right: 40 }}
         >
           <VictoryBar
             data={data}
             // Apple 风格的 VictoryBar 样式配置
             cornerRadius={{ top: 8 }}
-            barWidth={20}
+            barWidth={16}
             style={{ 
               data: { 
                 fill: '#fc4c02', 
@@ -81,6 +81,17 @@ const YearlyChart = ({ data, runs }) => {
               tickLabels: { fontSize: 11, padding: 5, fill: '#555', fontWeight: 500 },
               grid: { stroke: '#f7f7f7', strokeWidth: 1, strokeDasharray: '4, 4' },
               axis: { stroke: '#f0f0f0', strokeWidth: 1 }
+            }}
+            domain={[0, undefined]}
+            tickValues={data => {
+              // 检查是否有数据
+              const maxValue = Math.max(...data.map(d => d.y));
+              if (maxValue <= 0) {
+                // 如果没有数据，使用默认刻度值
+                return [0, 10, 20, 30, 40, 50];
+              }
+              // 有数据时根据最大值计算合适的刻度
+              return undefined;
             }}
           />
         </VictoryChart>

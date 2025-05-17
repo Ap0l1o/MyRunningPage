@@ -17,6 +17,31 @@ exports.createSchemaCustomization = ({ actions }) => {
       elevation_difference: Float
     }
 
+    type Split {
+      distance: Float
+      elapsed_time: Float
+      moving_time: Float
+      average_speed: Float
+      pace: Float
+      average_heartrate: Float
+      elevation_difference: Float
+      split_number: Int
+    }
+
+    type Lap {
+      lap_number: Int
+      name: String
+      distance: Float
+      elapsed_time: Float
+      moving_time: Float
+      average_speed: Float
+      pace: Float
+      average_heartrate: Float
+      max_heartrate: Float
+      start_date: String
+      elevation_difference: Float
+    }
+
     type MarkdownRemarkFrontmatter {
       title: String
       name: String
@@ -36,6 +61,8 @@ exports.createSchemaCustomization = ({ actions }) => {
       max_heartrate: Float
       calories: Float
       segments: [Segment]
+      splits: [Split]
+      laps: [Lap]
     }
   `
 
