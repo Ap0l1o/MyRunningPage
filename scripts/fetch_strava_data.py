@@ -116,21 +116,10 @@ def fetch_strava_activities(client_id, client_secret, refresh_token, fetch_all=F
                 all_activities = list(client.get_activities())
             else:
                 latest_time = get_latest_activity_time(runs_dir)
-<<<<<<< HEAD
-                            break
-                        continue
-                    else:  # 如果是增量更新，没有新数据就退出
-                        break
-                
-                all_activities.extend(activities)
-                print(f'已获取{start_time.date()}至{end_time.date()}的数据，共{len(all_activities)}条记录')
-                start_time = end_time
-=======
                 # 获取最新活动
                 print(f'获取最新活动数据')
                 all_activities = list(client.get_activities(after=latest_time))
                 print(f'已获取{len(all_activities)}条新记录')
->>>>>>> main
             
             return all_activities, new_refresh_token, access_token
         except Exception as e:
@@ -289,11 +278,7 @@ def process_splits(activity):
     
     return splits
 
-<<<<<<< HEAD
-def create_markdown(activity, segments=None, stream_data=None, splits=None):
-=======
 def create_markdown(activity, segments=None, stream_data=None, splits=None, laps=None):
->>>>>>> main
     try:
         start_time = activity.start_date_local
         if not start_time:
@@ -347,13 +332,10 @@ def create_markdown(activity, segments=None, stream_data=None, splits=None, laps
         # 添加公里分割数据
         if splits:
             frontmatter_lines.append(f"splits: {json.dumps(splits)}")
-<<<<<<< HEAD
-=======
             
         # 添加分圈数据
         if laps:
             frontmatter_lines.append(f"laps: {json.dumps(laps)}")
->>>>>>> main
         
         # 添加流数据
         if stream_data:
@@ -431,12 +413,8 @@ def main():
     parser.add_argument('--fetch-all', action='store_true', help='是否获取所有历史数据')
     parser.add_argument('--no-segments', action='store_true', help='不获取分段数据')
     parser.add_argument('--no-splits', action='store_true', help='不获取公里分割数据')
-<<<<<<< HEAD
-    parser.add_argument('--include-streams', action='store_true', help='是否包含流数据（心率、配速、海拔）')
-=======
     parser.add_argument('--no-laps', action='store_true', help='不获取分圈数据')
     parser.add_argument('--no-streams', action='store_true', help='不获取流数据（心率、配速、海拔）')
->>>>>>> main
     
     args = parser.parse_args()
     
