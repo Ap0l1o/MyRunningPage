@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react'
 import { window } from 'browser-monads'
 import { Link } from 'gatsby'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
 
 const AllRunsData = ({ runs }) => {
   const [currentPage, setCurrentPage] = useState(1)
   const [sortedRunData, setSortedRunData] = useState([])
+  const [filteredRunData, setFilteredRunData] = useState([])
   const [isMobile, setIsMobile] = useState(false)
+  const [dateRange, setDateRange] = useState('all')
+  const [startDate, setStartDate] = useState(null)
+  const [endDate, setEndDate] = useState(null)
+  const [customDateRange, setCustomDateRange] = useState(false)
   const itemsPerPage = 10
   
   // 检测移动设备
@@ -46,6 +53,31 @@ const AllRunsData = ({ runs }) => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
   }
 
+  // 处理日期区间选择
+  const handleDateRangeChange = (range) => {
+    setDateRange(range);
+    setCustomDateRange(range === 'custom');
+    
+    // 重置当前页码
+    setCurrentPage(1);
+    
+    // 设置预定义的日期范围
+    if (range === 'week') {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      setStartDate(oneWeekAgo);
+      setEndDate(new Date());
+    } else if (range === 'month') {
+      const fourWeeksAgo = new Date();
+      fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+      setStartDate(fourWeeksAgo);
+      setEndDate(new Date());
+    } else if (range === 'all') {
+      setStartDate(null);
+      setEndDate(null);
+    }
+  };
+  
   // 在组件挂载时对数据进行排序
   useEffect(() => {
     // 创建一个带有唯一ID和时间信息的数据副本
@@ -88,8 +120,42 @@ const AllRunsData = ({ runs }) => {
     });
     
     setSortedRunData(sortedData);
+    setFilteredRunData(sortedData); // 初始化过滤后的数据
     setCurrentPage(1); // 重置当前页码
   }, [runs]);
+  
+  // 当日期范围变化时过滤数据
+  useEffect(() => {
+    if (!startDate && !endDate) {
+      // 如果没有日期范围，显示所有数据
+      setFilteredRunData(sortedRunData);
+      return;
+    }
+    
+    const filtered = sortedRunData.filter(run => {
+      const runDate = run._date;
+      
+      // 如果有开始日期，检查跑步日期是否在开始日期之后
+      if (startDate && runDate < startDate) {
+        return false;
+      }
+      
+      // 如果有结束日期，检查跑步日期是否在结束日期之前
+      if (endDate) {
+        // 创建结束日期的副本并设置为当天的最后时刻
+        const endOfDay = new Date(endDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        if (runDate > endOfDay) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+    
+    setFilteredRunData(filtered);
+    setCurrentPage(1); // 重置当前页码
+  }, [sortedRunData, startDate, endDate]);
 
   // 从文件路径中提取活动ID
   const getActivityIdFromPath = (path) => {
@@ -106,11 +172,144 @@ const AllRunsData = ({ runs }) => {
       boxShadow: '0 2px 4px rgba(0,0,0,0.1)', 
       marginTop: isMobile ? '20px' : '30px' 
     }}>
-      <h3 style={{ 
-        margin: '0 0 15px 0', 
-        color: '#333',
-        fontSize: isMobile ? '18px' : '20px' 
-      }}>所有数据</h3>
+      <div style={{ 
+        display: 'flex', 
+        flexWrap: 'wrap', 
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '20px'
+      }}>
+        <div style={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          alignItems: 'center',
+          gap: '10px'
+        }}>
+          <h3 style={{ 
+            margin: '0', 
+            color: '#333',
+            fontSize: isMobile ? '18px' : '20px',
+            marginRight: '15px'
+          }}>所有数据</h3>
+          
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            <button 
+              onClick={() => handleDateRangeChange('all')}
+              style={{
+                padding: '4px 10px',
+                backgroundColor: dateRange === 'all' ? '#fc4c02' : '#f0f0f0',
+                color: dateRange === 'all' ? 'white' : '#333',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '13px'
+              }}
+            >
+              所有数据
+            </button>
+            
+            <button 
+              onClick={() => handleDateRangeChange('week')}
+              style={{
+                padding: '4px 10px',
+                backgroundColor: dateRange === 'week' ? '#fc4c02' : '#f0f0f0',
+                color: dateRange === 'week' ? 'white' : '#333',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '13px'
+              }}
+            >
+              过去一周
+            </button>
+            
+            <button 
+              onClick={() => handleDateRangeChange('month')}
+              style={{
+                padding: '4px 10px',
+                backgroundColor: dateRange === 'month' ? '#fc4c02' : '#f0f0f0',
+                color: dateRange === 'month' ? 'white' : '#333',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '13px'
+              }}
+            >
+              过去四周
+            </button>
+            
+            <button 
+              onClick={() => handleDateRangeChange('custom')}
+              style={{
+                padding: '4px 10px',
+                backgroundColor: dateRange === 'custom' ? '#fc4c02' : '#f0f0f0',
+                color: dateRange === 'custom' ? 'white' : '#333',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '13px'
+              }}
+            >
+              自定义区间
+            </button>
+          </div>
+        </div>
+        
+        <div style={{ fontSize: '14px', color: '#666' }}>
+          显示 {filteredRunData.length} 条跑步记录
+        </div>
+      </div>
+      
+      {customDateRange && (
+        <div style={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          alignItems: 'center',
+          marginBottom: '20px',
+          gap: '8px'
+        }}>
+          <DatePicker
+            selected={startDate}
+            onChange={date => setStartDate(date)}
+            selectsStart
+            startDate={startDate}
+            endDate={endDate}
+            placeholderText="开始日期"
+            dateFormat="yyyy-MM-dd"
+            className="date-picker"
+            customInput={
+              <input style={{
+                padding: '6px 12px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                width: isMobile ? '120px' : '150px'
+              }} />
+            }
+          />
+          <span>至</span>
+          <DatePicker
+            selected={endDate}
+            onChange={date => setEndDate(date)}
+            selectsEnd
+            startDate={startDate}
+            endDate={endDate}
+            minDate={startDate}
+            placeholderText="结束日期"
+            dateFormat="yyyy-MM-dd"
+            className="date-picker"
+            customInput={
+              <input style={{
+                padding: '6px 12px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '14px',
+                width: isMobile ? '120px' : '150px'
+              }} />
+            }
+          />
+        </div>
+      )}
       <div style={{ 
         overflowX: isMobile ? 'auto' : 'visible',
         WebkitOverflowScrolling: 'touch',
@@ -134,7 +333,7 @@ const AllRunsData = ({ runs }) => {
             </tr>
           </thead>
           <tbody>
-            {sortedRunData
+            {filteredRunData
               .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
               .map((run) => {
                 const duration = run.frontmatter.duration
@@ -214,20 +413,20 @@ const AllRunsData = ({ runs }) => {
         </button>
         
         <span style={{ padding: '8px 16px', fontWeight: '500' }}>
-          第 {currentPage} 页 / 共 {Math.ceil(sortedRunData.length / itemsPerPage)} 页
+          第 {currentPage} 页 / 共 {Math.ceil(filteredRunData.length / itemsPerPage)} 页
         </span>
         
         <button
           onClick={() => setCurrentPage(prev => prev + 1)}
-          disabled={currentPage >= Math.ceil(sortedRunData.length / itemsPerPage)}
+          disabled={currentPage >= Math.ceil(filteredRunData.length / itemsPerPage)}
           style={{ 
             padding: isMobile ? '4px 8px' : '8px 16px', 
             margin: '0 5px', 
-            background: currentPage >= Math.ceil(sortedRunData.length / itemsPerPage) ? '#e0e0e0' : '#fc4c02', 
+            background: currentPage >= Math.ceil(filteredRunData.length / itemsPerPage) ? '#e0e0e0' : '#fc4c02', 
             color: 'white', 
             border: 'none', 
             borderRadius: '4px',
-            cursor: currentPage >= Math.ceil(sortedRunData.length / itemsPerPage) ? 'not-allowed' : 'pointer',
+            cursor: currentPage >= Math.ceil(filteredRunData.length / itemsPerPage) ? 'not-allowed' : 'pointer',
             fontSize: isMobile ? '14px' : '16px'
           }}
         >
