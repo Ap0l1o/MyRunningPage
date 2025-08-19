@@ -1,6 +1,7 @@
 # 我的跑步数据可视化网站
 
 这是一个基于Gatsby开发的个人跑步数据可视化网站，通过Strava API自动同步和展示跑步活动数据。
+![](https://cdn.jsdelivr.net/gh/Ap0l1o/ImageHostingService@main/img/runng-web/my-running-page.png)
 
 ## 功能特点
 
